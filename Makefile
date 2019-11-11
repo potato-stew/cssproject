@@ -28,15 +28,10 @@ RUST_OBJS = opts.o
 RUST_STDLIB_PATH = /usr/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-c78f872a5c746c09.so
 
 vsftpd: $(OBJS) $(RUST_OBJS)
-#	echo "LIBS=",$(LIBS)
-#	$(CC) -o vsftpd $(OBJS) $(LINK) $(LDFLAGS) $(LIBS)
-#	ld -r -o CObject.o $(OBJS)
-#	ld -r -o RustObject.o $(RUST_OBJS)
-#	clang -o vsftpd CObject.o RustObject.o $(RUST_STDLIB_PATH) $(LINK) $(LDFLAGS) $(LIBS)
 	clang -o vsftpd $(OBJS) $(RUST_OBJS) $(RUST_STDLIB_PATH) $(LINK) $(LDFLAGS) $(LIBS)
 
-opts.o:
-	$(RUSTC) $(RUST_FLAGS) rust/opts.rs -A warnings
+$(RUST_OBJS):
+	$(RUSTC) $(RUST_FLAGS) rust/$*.rs -A warnings
 
 .c.o:
 	$(CC) -c $*.c $(CFLAGS) $(IFLAGS)
@@ -60,4 +55,4 @@ install:
 
 clean:
 	rm -f *.o *.swp vsftpd
-
+#	rm -f rust/*.o
