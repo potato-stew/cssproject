@@ -61,7 +61,8 @@ fn handle_pwd () {
 	mystr s_cwd_buf_mangle_str;
 	mystr s_pwd_res_str;
 
-	str_getcwd();
+	str_getcwd(&s_cwd_buf_mangle_str);
+	str_replace_text(&s_cwd_buf_mangle_str,);
 }
 
 handle_pwd(struct vsf_session* p_sess)

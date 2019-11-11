@@ -9,9 +9,12 @@
 
 use std::mem;
 use std::ffi::CString;
+use std::os::raw::c_char;
+use std::str;
 
 mod bindings;
 
+use bindings::str_to_const_char;
 use bindings::vsf_session;
 use bindings::mystr;
 use bindings::str_upper;
@@ -22,25 +25,18 @@ use bindings::FTP_OPTSOK;
 use bindings::FTP_BADOPTS;
 
 #[no_mangle]
-pub unsafe extern "C" fn handle_opts (p_sess: *mut vsf_session ) {
-	str_upper( &(*p_sess).ftp_arg_str );
+pub unsafe extern "C" fn handle_opts (p_sess: &mut vsf_session ) {
 	println!("handle_opts from Rust!");
-	unsafe {
-//	str_upper( mem::transmute::<&bindings::mystr,*mut bindings::mystr>(&(*p_sess).ftp_arg_str) );
 
-    let UTF8_ON = CString::new("UTF8 ON").unwrap();
-	if str_equal_text( mem::transmute::<&bindings::mystr,*mut bindings::mystr>(&(*p_sess).ftp_arg_str), UTF8_ON.as_ptr() ) != 0
+	str_upper( &p_sess.ftp_arg_str );
+	if str_equal_text( &p_sess.ftp_arg_str, str_to_const_char("UTF8 ON") ) != 0
 	 {
-	  let s = CString::new("Always in UTF8 mode.").unwrap();
-	  vsf_cmdio_write(p_sess, FTP_OPTSOK, s.as_ptr());
+	  vsf_cmdio_write(p_sess, FTP_OPTSOK, str_to_const_char("Always in UTF8 mode.") );
 	 }
 	else
 	 {
-	  let s = CString::new("Option not understood.").unwrap();
-	  vsf_cmdio_write(p_sess, FTP_BADOPTS, s.as_ptr());
+	  vsf_cmdio_write(p_sess, FTP_BADOPTS, str_to_const_char("Option not understood.") );
 	 }
-
- }
 
 }
 
