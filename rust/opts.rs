@@ -11,6 +11,7 @@ use std::mem;
 use std::ffi::CString;
 use std::os::raw::c_char;
 use std::str;
+use std::os::raw::c_uint;
 
 mod bindings;
 

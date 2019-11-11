@@ -1,7 +1,17 @@
 
 mod bindings;
 
+use bindings::str_to_const_char;
+
 use bindings::mystr;
+
+use bindings::str_replace_text;
+use bindings::str_alloc_text;
+use bindings::str_append_str;
+use bindings::str_append_text;
+use bindings::vsf_cmdio_write_str;
+
+use bindings::FTP_PWDOK;
 
 /* Private local functions */
 /*
@@ -60,11 +70,18 @@ static void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
 fn handle_pwd () {
 	mystr s_cwd_buf_mangle_str;
 	mystr s_pwd_res_str;
-
 	str_getcwd(&s_cwd_buf_mangle_str);
-	str_replace_text(&s_cwd_buf_mangle_str,);
+
+    /* Double up any double-quotes in the pathname! */
+	str_replace_text(&s_cwd_buf_mangle_str, str_to_const_char("\""), str_to_const_char("\"\"") );
+    str_alloc_text(&s_pwd_res_str, str_to_const_char("\"") );
+    str_append_str(&s_pwd_res_str, &s_cwd_buf_mangle_str);
+    str_append_text(&s_pwd_res_str, str_to_const_char("\" is the current directory") );
+    vsf_cmdio_write_str(p_sess, FTP_PWDOK, &s_pwd_res_str);
 }
 
+/*
+void
 handle_pwd(struct vsf_session* p_sess)
 {
   static struct mystr s_cwd_buf_mangle_str;
@@ -78,3 +95,4 @@ handle_pwd(struct vsf_session* p_sess)
   str_append_text(&s_pwd_res_str, "\" is the current directory");
   vsf_cmdio_write_str(p_sess, FTP_PWDOK, &s_pwd_res_str);
 }
+*/

@@ -560,7 +560,7 @@ assert_eq ! (:: std :: mem :: size_of :: < bin_to_ascii_ret > ( ) , 8usize , con
 }
  extern "C" {
 //[link_name = "\u{1}_Z16vsf_banner_writeP11vsf_sessionP5mystri"]
- pub fn vsf_banner_write (p_sess : &mut vsf_session , p_str : &mut mystr , ftpcode : :: std :: os :: raw :: c_int) ;
+ pub fn vsf_banner_write (p_sess : &mut vsf_session , p_str : &mystr , ftpcode : :: std :: os :: raw :: c_int) ;
 
 }
  extern "C" {
@@ -576,7 +576,7 @@ assert_eq ! (:: std :: mem :: size_of :: < bin_to_ascii_ret > ( ) , 8usize , con
  pub type filesize_t = :: std :: os :: raw :: c_longlong ;
  extern "C" {
 //[link_name = "\u{1}_Z12str_filereadP5mystrPKcj"]
- pub fn str_fileread (p_str : &mut mystr , p_filename : * const :: std :: os :: raw :: c_char , maxsize : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
+ pub fn str_fileread (p_str : &mystr , p_filename : * const :: std :: os :: raw :: c_char , maxsize : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
@@ -622,12 +622,89 @@ pub fn vsf_cmdio_write (p_sess : &mut vsf_session , status : :: std :: os :: raw
 }
  extern "C" {
 //[link_name = "\u{1}_Z25vsf_cmdio_get_cmd_and_argP11vsf_sessionP5mystrS2_i"]
- pub fn vsf_cmdio_get_cmd_and_arg (p_sess : &mut vsf_session , p_cmd_str : &mut mystr , p_arg_str : &mut mystr , set_alarm : :: std :: os :: raw :: c_int) ;
+ pub fn vsf_cmdio_get_cmd_and_arg (p_sess : &mut vsf_session , p_cmd_str : &mystr , p_arg_str : &mystr , set_alarm : :: std :: os :: raw :: c_int) ;
 
 }
- # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct vsf_sysutil_sockaddr {
-_unused : [u8 ; 0] ,
+
+/*
+struct vsf_sysutil_sockaddr
+{
+  union
+  {
+    struct sockaddr u_sockaddr;
+    struct sockaddr_in u_sockaddr_in;
+    struct sockaddr_in6 u_sockaddr_in6;
+  } u;
+};
+
+struct sockaddr
+  {
+    __SOCKADDR_COMMON (sa_);	/* Common data: address family and length.  */
+    char sa_data[14];		/* Address data.  */
+  };
+
+struct sockaddr_in {
+               sa_family_t    sin_family; /* address family: AF_INET */
+               in_port_t      sin_port;   /* port in network byte order */
+               struct in_addr sin_addr;   /* internet address */
+           };
+
+           /* Internet address. */
+           struct in_addr {
+               uint32_t       s_addr;     /* address in network byte order */
+           };
+
+struct sockaddr_in6 {
+               sa_family_t     sin6_family;   /* AF_INET6 */
+               in_port_t       sin6_port;     /* port number */
+               uint32_t        sin6_flowinfo; /* IPv6 flow information */
+               struct in6_addr sin6_addr;     /* IPv6 address */
+               uint32_t        sin6_scope_id; /* Scope ID (new in 2.4) */
+           };
+
+           struct in6_addr {
+               unsigned char   s6_addr[16];   /* IPv6 address */
+           };
+
+*/
+
+use std::os::raw::*;
+
+pub type sa_family_t = :: std :: os :: raw :: c_ushort ;
+pub type in_port_t = c_ushort;
+
+ # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct in_addr {
+  s_addr: u32,
 }
+
+ # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct sockaddr_in {
+ 	sin_family: sa_family_t, sin_port: in_port_t, sin_addr: in_addr,
+}
+
+ # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct in6_addr {
+s6_addr: [ c_uchar ; 16],
+}
+
+ # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct sockaddr_in6 {
+ 	sin6_family: sa_family_t, sin6_port: in_port_t, sin6_flowinfo: u32, sin6_addr: in6_addr, sin6_scope_id: u32,
+}
+
+ # [repr ( C )] # [derive ( Copy , Clone )] 
+ union inner_vsf_sysutil_sockaddr
+  {
+    u_sockaddr: sockaddr,
+    u_sockaddr_in: sockaddr_in,
+    u_sockaddr_in6: sockaddr_in6,
+  }
+
+ # [repr ( C )] # [derive ( Copy , Clone )] pub struct vsf_sysutil_sockaddr {
+u: inner_vsf_sysutil_sockaddr,
+}
+
+// # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct vsf_sysutil_sockaddr {
+//_unused : [u8 ; 0] ,
+//}
+
  # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct vsf_sysutil_dir {
 _unused : [u8 ; 0] ,
 }
@@ -759,12 +836,12 @@ _unused : [u8 ; 0] ,
 }
  extern "C" {
 //[link_name = "\u{1}_Z12vsf_log_lineP11vsf_session16EVSFLogEntryTypeP5mystr"]
- pub fn vsf_log_line (p_sess : &mut vsf_session , what : EVSFLogEntryType , p_str : &mut mystr) ;
+ pub fn vsf_log_line (p_sess : &mut vsf_session , what : EVSFLogEntryType , p_str : &mystr) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z24vsf_ls_populate_dir_listP10mystr_listS0_P15vsf_sysutil_dirPK5mystrS5_S5_i"]
- pub fn vsf_ls_populate_dir_list (p_list : &mut mystr_list , p_subdir_list : &mut mystr_list , p_dir : &mut vsf_sysutil_dir , p_base_dir_str : * const mystr , p_option_str : * const mystr , p_filter_str : * const mystr , is_verbose : :: std :: os :: raw :: c_int) ;
+ pub fn vsf_ls_populate_dir_list (p_list : &mystr_list , p_subdir_list : &mystr_list , p_dir : &mut vsf_sysutil_dir , p_base_dir_str : * const mystr , p_option_str : * const mystr , p_filter_str : * const mystr , is_verbose : :: std :: os :: raw :: c_int) ;
 
 }
  extern "C" {
@@ -775,12 +852,12 @@ _unused : [u8 ; 0] ,
  pub type str_netfd_read_t = :: std :: option :: Option < unsafe extern "C" fn (p_sess : &mut vsf_session , arg1 : &mut :: std :: os :: raw :: c_char , arg2 : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int > ;
  extern "C" {
 //[link_name = "\u{1}_Z15str_netfd_allocP11vsf_sessionP5mystrcPcjPFiS0_S3_jES5_"]
- pub fn str_netfd_alloc (p_sess : &mut vsf_session , p_str : &mut mystr , term : :: std :: os :: raw :: c_char , p_readbuf : &mut :: std :: os :: raw :: c_char , maxlen : :: std :: os :: raw :: c_uint , p_peekfunc : str_netfd_read_t , p_readfunc : str_netfd_read_t) -> :: std :: os :: raw :: c_int ;
+ pub fn str_netfd_alloc (p_sess : &mut vsf_session , p_str : &mystr , term : :: std :: os :: raw :: c_char , p_readbuf : &mut :: std :: os :: raw :: c_char , maxlen : :: std :: os :: raw :: c_uint , p_peekfunc : str_netfd_read_t , p_readfunc : str_netfd_read_t) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z14str_netfd_readP5mystrij"]
- pub fn str_netfd_read (p_str : &mut mystr , fd : :: std :: os :: raw :: c_int , len : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
+ pub fn str_netfd_read (p_str : &mystr , fd : :: std :: os :: raw :: c_int , len : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
@@ -1227,7 +1304,6 @@ assert_eq ! (:: std :: mem :: size_of :: < iovec > ( ) , 16usize , concat ! ( "S
  pub const __socket_type_SOCK_CLOEXEC : __socket_type = 524288 ;
  pub const __socket_type_SOCK_NONBLOCK : __socket_type = 2048 ;
  pub type __socket_type = u32 ;
- pub type sa_family_t = :: std :: os :: raw :: c_ushort ;
  # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct sockaddr {
 pub sa_family : sa_family_t , pub sa_data : [:: std :: os :: raw :: c_char ; 14usize] ,
 }
@@ -1634,7 +1710,7 @@ pub fn shm_unlink (__name : * const :: std :: os :: raw :: c_char) -> :: std :: 
 }
  extern "C" {
 //[link_name = "\u{1}_Z17priv_sock_get_striP5mystr"]
- pub fn priv_sock_get_str (fd : :: std :: os :: raw :: c_int , p_dest : &mut mystr) ;
+ pub fn priv_sock_get_str (fd : :: std :: os :: raw :: c_int , p_dest : &mystr) ;
 
 }
  extern "C" {
@@ -1973,7 +2049,7 @@ pub fn shm_unlink (__name : * const :: std :: os :: raw :: c_char) -> :: std :: 
 }
  extern "C" {
 //[link_name = "\u{1}_Z11ftp_getlineP11vsf_sessionP5mystrPc"]
- pub fn ftp_getline (p_sess : &mut vsf_session , p_str : &mut mystr , p_buf : &mut :: std :: os :: raw :: c_char) -> :: std :: os :: raw :: c_int ;
+ pub fn ftp_getline (p_sess : &mut vsf_session , p_str : &mystr , p_buf : &mut :: std :: os :: raw :: c_char) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
@@ -2016,8 +2092,11 @@ pub fn shm_unlink (__name : * const :: std :: os :: raw :: c_char) -> :: std :: 
  pub fn vsf_secutil_change_credentials (p_user_str : * const mystr , p_dir_str : * const mystr , p_ext_dir_str : * const mystr , caps : :: std :: os :: raw :: c_uint , options : :: std :: os :: raw :: c_uint) ;
 
 }
+
  # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct mystr {
-pub PRIVATE_HANDS_OFF_p_buf : *mut :: std :: os :: raw :: c_char , pub PRIVATE_HANDS_OFF_len : :: std :: os :: raw :: c_uint , pub PRIVATE_HANDS_OFF_alloc_bytes : :: std :: os :: raw :: c_uint ,
+pub PRIVATE_HANDS_OFF_p_buf : *mut :: std :: os :: raw :: c_char ,
+pub PRIVATE_HANDS_OFF_len : :: std :: os :: raw :: c_uint ,
+pub PRIVATE_HANDS_OFF_alloc_bytes : :: std :: os :: raw :: c_uint ,
 }
  # [test] fn bindgen_test_layout_mystr () {
 assert_eq ! (:: std :: mem :: size_of :: < mystr > ( ) , 16usize , concat ! ( "Size of: " , stringify ! ( mystr ) )) ;
@@ -2029,32 +2108,32 @@ assert_eq ! (:: std :: mem :: size_of :: < mystr > ( ) , 16usize , concat ! ( "S
 }
  extern "C" {
 //[link_name = "\u{1}_Z26private_str_alloc_memchunkP5mystrPKcj"]
- pub fn private_str_alloc_memchunk (p_str : &mut mystr , p_src : * const :: std :: os :: raw :: c_char , len : :: std :: os :: raw :: c_uint) ;
+ pub fn private_str_alloc_memchunk (p_str : &mystr , p_src : * const :: std :: os :: raw :: c_char , len : :: std :: os :: raw :: c_uint) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z14str_alloc_textP5mystrPKc"]
- pub fn str_alloc_text (p_str : &mut mystr , p_src : * const :: std :: os :: raw :: c_char) ;
+ pub fn str_alloc_text (p_str : &mystr , p_src : * const :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z18str_alloc_alt_termP5mystrPKcc"]
- pub fn str_alloc_alt_term (p_str : &mut mystr , p_src : * const :: std :: os :: raw :: c_char , term : :: std :: os :: raw :: c_char) ;
+ pub fn str_alloc_alt_term (p_str : &mystr , p_src : * const :: std :: os :: raw :: c_char , term : :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z15str_alloc_ulongP5mystrm"]
- pub fn str_alloc_ulong (p_str : &mut mystr , the_ulong : :: std :: os :: raw :: c_ulong) ;
+ pub fn str_alloc_ulong (p_str : &mystr , the_ulong : :: std :: os :: raw :: c_ulong) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z20str_alloc_filesize_tP5mystrx"]
- pub fn str_alloc_filesize_t (p_str : &mut mystr , the_filesize : filesize_t) ;
+ pub fn str_alloc_filesize_t (p_str : &mystr , the_filesize : filesize_t) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z8str_copyP5mystrPKS_"]
- pub fn str_copy (p_dest : &mut mystr , p_src : * const mystr) ;
+ pub fn str_copy (p_dest : &mystr , p_src : * const mystr) ;
 
 }
  extern "C" {
@@ -2064,22 +2143,22 @@ assert_eq ! (:: std :: mem :: size_of :: < mystr > ( ) , 16usize , concat ! ( "S
 }
  extern "C" {
 //[link_name = "\u{1}_Z9str_emptyP5mystr"]
- pub fn str_empty (p_str : &mut mystr) ;
+ pub fn str_empty (p_str : &mystr) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z8str_freeP5mystr"]
- pub fn str_free (p_str : &mut mystr) ;
+ pub fn str_free (p_str : &mystr) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z9str_truncP5mystrj"]
- pub fn str_trunc (p_str : &mut mystr , trunc_len : :: std :: os :: raw :: c_uint) ;
+ pub fn str_trunc (p_str : &mystr , trunc_len : :: std :: os :: raw :: c_uint) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z11str_reserveP5mystrj"]
- pub fn str_reserve (p_str : &mut mystr , res_len : :: std :: os :: raw :: c_uint) ;
+ pub fn str_reserve (p_str : &mystr , res_len : :: std :: os :: raw :: c_uint) ;
 
 }
  extern "C" {
@@ -2115,81 +2194,81 @@ pub fn str_equal_text (p_str : * const mystr , p_text : * const :: std :: os :: 
 }
  extern "C" {
 //[link_name = "\u{1}_Z14str_append_strP5mystrPKS_"]
- pub fn str_append_str (p_str : &mut mystr , p_other : * const mystr) ;
+ pub fn str_append_str (p_str : &mystr , p_other : * const mystr) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z15str_append_textP5mystrPKc"]
- pub fn str_append_text (p_str : &mut mystr , p_src : * const :: std :: os :: raw :: c_char) ;
+ pub fn str_append_text (p_str : &mystr , p_src : * const :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z16str_append_ulongP5mystrm"]
- pub fn str_append_ulong (p_str : &mut mystr , the_long : :: std :: os :: raw :: c_ulong) ;
+ pub fn str_append_ulong (p_str : &mystr , the_long : :: std :: os :: raw :: c_ulong) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z21str_append_filesize_tP5mystrx"]
- pub fn str_append_filesize_t (p_str : &mut mystr , the_filesize : filesize_t) ;
+ pub fn str_append_filesize_t (p_str : &mystr , the_filesize : filesize_t) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z15str_append_charP5mystrc"]
- pub fn str_append_char (p_str : &mut mystr , the_char : :: std :: os :: raw :: c_char) ;
+ pub fn str_append_char (p_str : &mystr , the_char : :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
 ////[link_name = "\u{1}_Z17str_append_doubleP5mystrd"]
 
-pub fn str_append_double (p_str : &mut mystr , the_double : f64) ;
+pub fn str_append_double (p_str : &mystr , the_double : f64) ;
 
 }
  extern "C" {
 //#[no_mangle]
 ////[link_name = "\u{1}_Z9str_upperP5mystr"]
 
-//pub fn str_upper (p_str : &mut mystr) ;
+//pub fn str_upper (p_str : &mystr) ;
 pub fn str_upper (p_str : &mystr) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z8str_rpadP5mystrj"]
- pub fn str_rpad (p_str : &mut mystr , min_width : :: std :: os :: raw :: c_uint) ;
+ pub fn str_rpad (p_str : &mystr , min_width : :: std :: os :: raw :: c_uint) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z8str_lpadP5mystrj"]
- pub fn str_lpad (p_str : &mut mystr , min_width : :: std :: os :: raw :: c_uint) ;
+ pub fn str_lpad (p_str : &mystr , min_width : :: std :: os :: raw :: c_uint) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z16str_replace_charP5mystrcc"]
- pub fn str_replace_char (p_str : &mut mystr , from : :: std :: os :: raw :: c_char , to : :: std :: os :: raw :: c_char) ;
+ pub fn str_replace_char (p_str : &mystr , from : :: std :: os :: raw :: c_char , to : :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z16str_replace_textP5mystrPKcS2_"]
- pub fn str_replace_text (p_str : &mut mystr , p_from : * const :: std :: os :: raw :: c_char , p_to : * const :: std :: os :: raw :: c_char) ;
+ pub fn str_replace_text (p_str : &mystr , p_from : * const :: std :: os :: raw :: c_char , p_to : * const :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z14str_split_charP5mystrS0_c"]
- pub fn str_split_char (p_src : &mut mystr , p_rhs : &mut mystr , c : :: std :: os :: raw :: c_char) ;
+ pub fn str_split_char (p_src : &mystr , p_rhs : &mystr , c : :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z22str_split_char_reverseP5mystrS0_c"]
- pub fn str_split_char_reverse (p_src : &mut mystr , p_rhs : &mut mystr , c : :: std :: os :: raw :: c_char) ;
+ pub fn str_split_char_reverse (p_src : &mystr , p_rhs : &mystr , c : :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z14str_split_textP5mystrS0_PKc"]
- pub fn str_split_text (p_src : &mut mystr , p_rhs : &mut mystr , p_text : * const :: std :: os :: raw :: c_char) ;
+ pub fn str_split_text (p_src : &mystr , p_rhs : &mystr , p_text : * const :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z22str_split_text_reverseP5mystrS0_PKc"]
- pub fn str_split_text_reverse (p_src : &mut mystr , p_rhs : &mut mystr , p_text : * const :: std :: os :: raw :: c_char) ;
+ pub fn str_split_text_reverse (p_src : &mystr , p_rhs : &mystr , p_text : * const :: std :: os :: raw :: c_char) ;
 
 }
  # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct str_locate_result {
@@ -2235,17 +2314,17 @@ assert_eq ! (:: std :: mem :: size_of :: < str_locate_result > ( ) , 12usize , c
 }
  extern "C" {
 //[link_name = "\u{1}_Z8str_leftPK5mystrPS_j"]
- pub fn str_left (p_str : * const mystr , p_out : &mut mystr , chars : :: std :: os :: raw :: c_uint) ;
+ pub fn str_left (p_str : * const mystr , p_out : &mystr , chars : :: std :: os :: raw :: c_uint) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z9str_rightPK5mystrPS_j"]
- pub fn str_right (p_str : * const mystr , p_out : &mut mystr , chars : :: std :: os :: raw :: c_uint) ;
+ pub fn str_right (p_str : * const mystr , p_out : &mystr , chars : :: std :: os :: raw :: c_uint) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z14str_mid_to_endPK5mystrPS_j"]
- pub fn str_mid_to_end (p_str : * const mystr , p_out : &mut mystr , indexx : :: std :: os :: raw :: c_uint) ;
+ pub fn str_mid_to_end (p_str : * const mystr , p_out : &mystr , indexx : :: std :: os :: raw :: c_uint) ;
 
 }
  extern "C" {
@@ -2270,7 +2349,7 @@ assert_eq ! (:: std :: mem :: size_of :: < str_locate_result > ( ) , 12usize , c
 }
  extern "C" {
 //[link_name = "\u{1}_Z23str_replace_unprintableP5mystrc"]
- pub fn str_replace_unprintable (p_str : &mut mystr , new_char : :: std :: os :: raw :: c_char) ;
+ pub fn str_replace_unprintable (p_str : &mystr , new_char : :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
@@ -2290,7 +2369,7 @@ assert_eq ! (:: std :: mem :: size_of :: < str_locate_result > ( ) , 12usize , c
 }
  extern "C" {
 //[link_name = "\u{1}_Z11str_getlinePK5mystrPS_Pj"]
- pub fn str_getline (p_str : * const mystr , p_line_str : &mut mystr , p_pos : &mut :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
+ pub fn str_getline (p_str : * const mystr , p_line_str : &mystr , p_pos : &mut :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
@@ -2385,7 +2464,7 @@ assert_eq ! (:: std :: mem :: size_of :: < vsf_session > ( ) , 480usize , concat
 }
  extern "C" {
 //[link_name = "\u{1}_Z17ssl_read_into_strP11vsf_sessionPvP5mystr"]
- pub fn ssl_read_into_str (p_sess : &mut vsf_session , p_ssl : &mut :: std :: os :: raw :: c_void , p_str : &mut mystr) -> :: std :: os :: raw :: c_int ;
+ pub fn ssl_read_into_str (p_sess : &mut vsf_session , p_ssl : &mut :: std :: os :: raw :: c_void , p_str : &mystr) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
@@ -2479,17 +2558,17 @@ assert_eq ! (:: std :: mem :: size_of :: < mystr_list > ( ) , 16usize , concat !
 }
  extern "C" {
 //[link_name = "\u{1}_Z13str_list_freeP10mystr_list"]
- pub fn str_list_free (p_list : &mut mystr_list) ;
+ pub fn str_list_free (p_list : &mystr_list) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z12str_list_addP10mystr_listPK5mystrS3_"]
- pub fn str_list_add (p_list : &mut mystr_list , p_str : * const mystr , p_sort_key_str : * const mystr) ;
+ pub fn str_list_add (p_list : &mystr_list , p_str : * const mystr , p_sort_key_str : * const mystr) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z13str_list_sortP10mystr_listi"]
- pub fn str_list_sort (p_list : &mut mystr_list , reverse : :: std :: os :: raw :: c_int) ;
+ pub fn str_list_sort (p_list : &mystr_list , reverse : :: std :: os :: raw :: c_int) ;
 
 }
  extern "C" {
@@ -2509,7 +2588,7 @@ assert_eq ! (:: std :: mem :: size_of :: < mystr_list > ( ) , 16usize , concat !
 }
  extern "C" {
 //[link_name = "\u{1}_Z21vsf_sysdep_check_authP5mystrPKS_S2_"]
- pub fn vsf_sysdep_check_auth (p_user : &mut mystr , p_pass : * const mystr , p_remote_host : * const mystr) -> :: std :: os :: raw :: c_int ;
+ pub fn vsf_sysdep_check_auth (p_user : &mystr , p_pass : * const mystr , p_remote_host : * const mystr) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
@@ -2619,12 +2698,12 @@ _unused : [u8 ; 0] ,
  extern "C" {
 ////[link_name = "\u{1}_Z10str_getcwdP5mystr"]
 
-pub fn str_getcwd (p_str : &mut mystr) ;
+pub fn str_getcwd (p_str : &mystr) ;
 
 }
  extern "C" {
 //[link_name = "\u{1}_Z12str_readlinkP5mystrPKS_"]
- pub fn str_readlink (p_str : &mut mystr , p_filename_str : * const mystr) -> :: std :: os :: raw :: c_int ;
+ pub fn str_readlink (p_str : &mystr , p_filename_str : * const mystr) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
@@ -2634,7 +2713,7 @@ pub fn str_getcwd (p_str : &mut mystr) ;
 }
  extern "C" {
 //[link_name = "\u{1}_Z13str_read_loopP5mystri"]
- pub fn str_read_loop (p_str : &mut mystr , fd : :: std :: os :: raw :: c_int) -> :: std :: os :: raw :: c_int ;
+ pub fn str_read_loop (p_str : &mystr , fd : :: std :: os :: raw :: c_int) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
@@ -2702,7 +2781,7 @@ pub fn str_getcwd (p_str : &mut mystr) ;
 }
  extern "C" {
 //[link_name = "\u{1}_Z15str_next_direntP5mystrP15vsf_sysutil_dir"]
- pub fn str_next_dirent (p_filename_str : &mut mystr , p_dir : &mut vsf_sysutil_dir) ;
+ pub fn str_next_dirent (p_filename_str : &mystr , p_dir : &mut vsf_sysutil_dir) ;
 
 }
  extern "C" {

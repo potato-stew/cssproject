@@ -24,7 +24,7 @@ OBJS	=	main.o utility.o prelogin.o ftpcmdio.o postlogin.o privsock.o \
 RUSTC = rustc
 RUST_FLAGS = --crate-type=staticlib --emit=obj -C panic=abort
 
-RUST_OBJS = opts.o
+RUST_OBJS = opts.o postlogin-rs.o
 RUST_STDLIB_PATH = /usr/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-c78f872a5c746c09.so
 
 vsftpd: $(OBJS) $(RUST_OBJS)
@@ -55,4 +55,4 @@ install:
 
 clean:
 	rm -f *.o *.swp vsftpd
-#	rm -f rust/*.o
+	#rm -f rust/*.o

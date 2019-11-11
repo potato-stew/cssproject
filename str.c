@@ -37,11 +37,17 @@ s_setbuf(struct mystr* p_str, char* p_newbuf)
   p_str->p_buf = p_newbuf;
 }
 
+/*
+void
+private_str_alloc_memchunk(struct mystr* p_str, const char* p_src,
+                           unsigned int len);
+*/
+
 void
 private_str_alloc_memchunk(struct mystr* p_str, const char* p_src,
                            unsigned int len)
 {
-  /* Make sure this will fit in the buffer */
+  // Make sure this will fit in the buffer
   unsigned int buf_needed;
   if (len + 1 < len)
   {

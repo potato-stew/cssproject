@@ -29,9 +29,14 @@
 #include "opts.h"
 
 /* Private local functions */
-static void handle_pwd(struct vsf_session* p_sess);
-static void handle_cwd(struct vsf_session* p_sess);
-static void handle_pasv(struct vsf_session* p_sess, int is_epsv);
+//static void handle_pwd(struct vsf_session* p_sess);
+//static void handle_cwd(struct vsf_session* p_sess);
+//static void handle_pasv(struct vsf_session* p_sess, int is_epsv);
+
+extern void handle_pwd(struct vsf_session* p_sess);
+extern void handle_cwd(struct vsf_session* p_sess);
+extern void handle_pasv(struct vsf_session* p_sess, int is_epsv);
+
 static void handle_retr(struct vsf_session* p_sess, int is_http);
 static void handle_cdup(struct vsf_session* p_sess);
 static void handle_list(struct vsf_session* p_sess);
@@ -78,7 +83,8 @@ static void handle_upload_common(struct vsf_session* p_sess, int is_append,
 static void get_unique_filename(struct mystr* p_outstr,
                                 const struct mystr* p_base);
 static int data_transfer_checks_ok(struct vsf_session* p_sess);
-static void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
+//static void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
+void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
 
 void
 process_post_login(struct vsf_session* p_sess)
@@ -464,15 +470,17 @@ process_post_login(struct vsf_session* p_sess)
   }
 }
 
-static void
+
+/*
+void
 handle_pwd(struct vsf_session* p_sess)
 {
   static struct mystr s_cwd_buf_mangle_str;
   static struct mystr s_pwd_res_str;
   str_getcwd(&s_cwd_buf_mangle_str);
-  /* Double up any double-quotes in the pathname! */
+  // Double up any double-quotes in the pathname!
   str_replace_text(&s_cwd_buf_mangle_str, "\"", "\"\"");
-  /* Enclose pathname in quotes */
+  // Enclose pathname in quotes
   str_alloc_text(&s_pwd_res_str, "\"");
   str_append_str(&s_pwd_res_str, &s_cwd_buf_mangle_str);
   str_append_text(&s_pwd_res_str, "\" is the current directory");
@@ -492,7 +500,7 @@ handle_cwd(struct vsf_session* p_sess)
   retval = str_chdir(&p_sess->ftp_arg_str);
   if (retval == 0)
   {
-    /* Handle any messages */
+    // Handle any messages
     vsf_banner_dir_changed(p_sess, FTP_CWDOK);
     vsf_cmdio_write(p_sess, FTP_CWDOK, "Directory successfully changed.");
   }
@@ -501,6 +509,7 @@ handle_cwd(struct vsf_session* p_sess)
     vsf_cmdio_write(p_sess, FTP_FILEFAIL, "Failed to change directory.");
   }
 }
+*/
 
 static void
 handle_cdup(struct vsf_session* p_sess)
@@ -565,6 +574,7 @@ pasv_cleanup(struct vsf_session* p_sess)
   }
 }
 
+/*
 static void
 handle_pasv(struct vsf_session* p_sess, int is_epsv)
 {
@@ -610,7 +620,7 @@ handle_pasv(struct vsf_session* p_sess, int is_epsv)
   if (tunable_pasv_address != 0)
   {
     vsf_sysutil_sockaddr_alloc_ipv4(&s_p_sockaddr);
-    /* Report passive address as specified in configuration */
+    // Report passive address as specified in configuration
     if (vsf_sysutil_inet_aton(tunable_pasv_address, s_p_sockaddr) == 0)
     {
       die("invalid pasv_address");
@@ -645,6 +655,7 @@ handle_pasv(struct vsf_session* p_sess, int is_epsv)
   str_append_text(&s_pasv_res_str, ").");
   vsf_cmdio_write_str(p_sess, FTP_PASVOK, &s_pasv_res_str);
 }
+*/
 
 static void
 handle_retr(struct vsf_session* p_sess, int is_http)
@@ -1913,7 +1924,8 @@ data_transfer_checks_ok(struct vsf_session* p_sess)
   return 1;
 }
 
-static void
+//static
+void
 resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess)
 {
   unsigned int len = str_getlen(p_str);
