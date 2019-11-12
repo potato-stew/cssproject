@@ -8580,7 +8580,26 @@ assert_eq ! (:: std :: mem :: size_of :: < sigevent > ( ) , 64usize , concat ! (
  pub const SIGEV_THREAD : _bindgen_ty_17 = 2 ;
  pub const SIGEV_THREAD_ID : _bindgen_ty_17 = 4 ;
  pub type _bindgen_ty_17 = u32 ;
+ use std::mem;
+
  pub type __sighandler_t = :: std :: option :: Option < unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int) > ;
+
+extern "C" {
+  pub static mut SIG_ERR:  __sighandler_t ;//=	 unsafe { Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(-1)) } ;	/* Error return.  */
+  pub static mut SIG_DFL:  __sighandler_t ;//=	 unsafe { Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(0) ) } ;	/* Default action.  */
+  pub static mut SIG_IGN:  __sighandler_t ;//=	 unsafe { Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(1) ) } ;	/* Ignore signal.  */
+  pub static mut SIG_HOLD: __sighandler_t ;//=	 unsafe { Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(2) ) } ;  /* Add signal to hold mask.  */
+}
+
+//SIG_ERR = unsafe { Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(1) ) };
+
+/*
+ pub const SIG_ERR:__sighandler_t=	 unsafe { Some( std::mem::const_transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(-1)  ) };	/* Error return.  */
+ pub const SIG_DFL:__sighandler_t=	 unsafe { Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(0) ) };	/* Default action.  */
+ pub const SIG_IGN:__sighandler_t=	 unsafe { Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(1) ) };	/* Ignore signal.  */
+ pub const SIG_HOLD:__sighandler_t=	 unsafe { Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(2) ) };  /* Add signal to hold mask.  */
+*/
+
  extern "C" {
 pub fn __sysv_signal (__sig : :: std :: os :: raw :: c_int , __handler : __sighandler_t) -> __sighandler_t ;
 
