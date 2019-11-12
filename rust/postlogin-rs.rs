@@ -1,10 +1,10 @@
 
-mod bindings;
+mod bindings_new;
 
 use std::ptr;
 use std::os::raw::*;
 
-use bindings::*;
+use bindings_new::*;
 
 extern "C" {
 pub fn resolve_tilde (p_str: &mystr, p_sess: &vsf_session);
@@ -12,8 +12,8 @@ pub fn resolve_tilde (p_str: &mystr, p_sess: &vsf_session);
 
 #[no_mangle]
 pub extern "C" fn handle_pwd (p_sess: &mut vsf_session) {
-	let mut s_cwd_buf_mangle_str: mystr = mystr { PRIVATE_HANDS_OFF_p_buf: ptr::null_mut(), PRIVATE_HANDS_OFF_alloc_bytes: 0, PRIVATE_HANDS_OFF_len: 0};
-	let mut s_pwd_res_str: mystr = mystr { PRIVATE_HANDS_OFF_p_buf: ptr::null_mut(), PRIVATE_HANDS_OFF_alloc_bytes: 0, PRIVATE_HANDS_OFF_len: 0};
+	let mut s_cwd_buf_mangle_str: mystr = mystr { p_buf: ptr::null_mut(), alloc_bytes: 0, len: 0};
+	let mut s_pwd_res_str: mystr = mystr { p_buf: ptr::null_mut(), alloc_bytes: 0, len: 0};
 
 	unsafe {
     str_getcwd(&s_cwd_buf_mangle_str);
@@ -58,8 +58,8 @@ pub extern "C" fn handle_cwd (p_sess: &mut vsf_session) {
 #[no_mangle]
 pub extern "C" fn handle_pasv (p_sess: &vsf_session,is_epsv: c_int) {
   let mut the_port : c_ushort;
-  let mut s_pasv_res_str : mystr = mystr { PRIVATE_HANDS_OFF_p_buf: ptr::null_mut(), PRIVATE_HANDS_OFF_alloc_bytes: 0, PRIVATE_HANDS_OFF_len: 0};
-  let mut s_p_sockaddr : vsf_sysutil_sockaddr = vsf_sysutil_sockaddr { u:{sockaddr: {} } };
+  let mut s_pasv_res_str : mystr = mystr { p_buf: ptr::null_mut(), alloc_bytes: 0, len: 0};
+//  let mut s_p_sockaddr : vsf_sysutil_sockaddr = vsf_sysutil_sockaddr { u:{sockaddr: {} } };
 
   unsafe {
   let mut is_ipv6: c_int = vsf_sysutil_sockaddr_is_ipv6(p_sess.p_local_addr);
