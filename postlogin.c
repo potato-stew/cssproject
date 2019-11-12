@@ -32,13 +32,22 @@
 //static void handle_pwd(struct vsf_session* p_sess);
 //static void handle_cwd(struct vsf_session* p_sess);
 //static void handle_pasv(struct vsf_session* p_sess, int is_epsv);
+//static void pasv_cleanup(struct vsf_session* p_sess);
+//static void port_cleanup(struct vsf_session* p_sess);
+//static void handle_cdup(struct vsf_session* p_sess);
+//static int port_active(struct vsf_session* p_sess);
+//static int pasv_active(struct vsf_session* p_sess);
 
 extern void handle_pwd(struct vsf_session* p_sess);
 extern void handle_cwd(struct vsf_session* p_sess);
 extern void handle_pasv(struct vsf_session* p_sess, int is_epsv);
+extern void pasv_cleanup(struct vsf_session* p_sess);
+extern void port_cleanup(struct vsf_session* p_sess);
+extern void handle_cdup(struct vsf_session* p_sess);
+extern int port_active(struct vsf_session* p_sess);
+extern int pasv_active(struct vsf_session* p_sess);
 
 static void handle_retr(struct vsf_session* p_sess, int is_http);
-static void handle_cdup(struct vsf_session* p_sess);
 static void handle_list(struct vsf_session* p_sess);
 static void handle_type(struct vsf_session* p_sess);
 static void handle_port(struct vsf_session* p_sess);
@@ -67,10 +76,6 @@ static void handle_logged_in_user(struct vsf_session* p_sess);
 static void handle_logged_in_pass(struct vsf_session* p_sess);
 static void handle_http(struct vsf_session* p_sess);
 
-static int pasv_active(struct vsf_session* p_sess);
-static int port_active(struct vsf_session* p_sess);
-static void pasv_cleanup(struct vsf_session* p_sess);
-static void port_cleanup(struct vsf_session* p_sess);
 static void handle_dir_common(struct vsf_session* p_sess, int full_details,
                               int stat_cmd);
 static void prepend_path_to_filename(struct mystr* p_str);
@@ -511,12 +516,15 @@ handle_cwd(struct vsf_session* p_sess)
 }
 */
 
+/*
 static void
 handle_cdup(struct vsf_session* p_sess)
 {
   str_alloc_text(&p_sess->ftp_arg_str, "..");
   handle_cwd(p_sess);
 }
+*/
+
 
 static int
 port_active(struct vsf_session* p_sess)
@@ -555,12 +563,15 @@ pasv_active(struct vsf_session* p_sess)
   return ret;
 }
 
+/*
 static void
 port_cleanup(struct vsf_session* p_sess)
 {
   vsf_sysutil_sockaddr_clear(&p_sess->p_port_sockaddr);
 }
+*/
 
+/*
 static void
 pasv_cleanup(struct vsf_session* p_sess)
 {
@@ -573,6 +584,7 @@ pasv_cleanup(struct vsf_session* p_sess)
     vsf_two_process_pasv_cleanup(p_sess);
   }
 }
+*/
 
 /*
 static void

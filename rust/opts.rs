@@ -7,15 +7,10 @@
  * Routines to handle OPTS.
  */
 
-use std::mem;
-use std::ffi::CString;
-use std::os::raw::c_char;
-use std::str;
-use std::os::raw::c_uint;
-use std::convert::*;
-
 mod bindings_new;
 use bindings_new::*;
+
+use std::os::raw::*;
 
 #[no_mangle]
 pub unsafe extern "C" fn handle_opts (mut p_sess: &mut vsf_session ) {

@@ -3133,17 +3133,17 @@ pub fn vsf_ascii_bin_to_ascii (p_in : * const :: std :: os :: raw :: c_char , p_
 }
  extern "C" {
 //# [link_name = "\u{1}_Z22vsf_banner_dir_changedP11vsf_sessioni"] 
-pub fn vsf_banner_dir_changed (p_sess : * mut vsf_session , ftpcode : :: std :: os :: raw :: c_int) ;
+pub fn vsf_banner_dir_changed (p_sess : &vsf_session , ftpcode : :: std :: os :: raw :: c_int) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z16vsf_banner_writeP11vsf_sessionP5mystri"] 
-pub fn vsf_banner_write (p_sess : * mut vsf_session , p_str : &mystr , ftpcode : :: std :: os :: raw :: c_int) ;
+pub fn vsf_banner_write (p_sess : &vsf_session , p_str : &mystr , ftpcode : :: std :: os :: raw :: c_int) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z11handle_featP11vsf_session"] 
-pub fn handle_feat (p_sess : * mut vsf_session) ;
+pub fn handle_feat (p_sess : &vsf_session) ;
 
 }
  pub type filesize_t = :: std :: os :: raw :: c_longlong ;
@@ -3159,42 +3159,42 @@ pub fn vsf_cmdio_sock_setup () ;
 }
  extern "C" {
 //# [link_name = "\u{1}_Z15vsf_cmdio_writeP11vsf_sessioniPKc"] 
-pub fn vsf_cmdio_write (p_sess : * mut vsf_session , status : :: std :: os :: raw :: c_int , p_text : * const :: std :: os :: raw :: c_char) ;
+pub fn vsf_cmdio_write (p_sess : &vsf_session , status : :: std :: os :: raw :: c_int , p_text : * const :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z22vsf_cmdio_write_hyphenP11vsf_sessioniPKc"] 
-pub fn vsf_cmdio_write_hyphen (p_sess : * mut vsf_session , status : :: std :: os :: raw :: c_int , p_text : * const :: std :: os :: raw :: c_char) ;
+pub fn vsf_cmdio_write_hyphen (p_sess : &vsf_session , status : :: std :: os :: raw :: c_int , p_text : * const :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z19vsf_cmdio_write_rawP11vsf_sessionPKc"] 
-pub fn vsf_cmdio_write_raw (p_sess : * mut vsf_session , p_text : * const :: std :: os :: raw :: c_char) ;
+pub fn vsf_cmdio_write_raw (p_sess : &vsf_session , p_text : * const :: std :: os :: raw :: c_char) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z20vsf_cmdio_write_exitP11vsf_sessioniPKci"] 
-pub fn vsf_cmdio_write_exit (p_sess : * mut vsf_session , status : :: std :: os :: raw :: c_int , p_text : * const :: std :: os :: raw :: c_char , exit_val : :: std :: os :: raw :: c_int) ;
+pub fn vsf_cmdio_write_exit (p_sess : &vsf_session , status : :: std :: os :: raw :: c_int , p_text : * const :: std :: os :: raw :: c_char , exit_val : :: std :: os :: raw :: c_int) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z19vsf_cmdio_write_strP11vsf_sessioniPK5mystr"] 
-pub fn vsf_cmdio_write_str (p_sess : * mut vsf_session , status : :: std :: os :: raw :: c_int , p_str : * const mystr) ;
+pub fn vsf_cmdio_write_str (p_sess : &vsf_session , status : :: std :: os :: raw :: c_int , p_str : * const mystr) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z26vsf_cmdio_write_str_hyphenP11vsf_sessioniPK5mystr"] 
-pub fn vsf_cmdio_write_str_hyphen (p_sess : * mut vsf_session , status : :: std :: os :: raw :: c_int , p_str : * const mystr) ;
+pub fn vsf_cmdio_write_str_hyphen (p_sess : &vsf_session , status : :: std :: os :: raw :: c_int , p_str : * const mystr) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z19vsf_cmdio_set_alarmP11vsf_session"] 
-pub fn vsf_cmdio_set_alarm (p_sess : * mut vsf_session) ;
+pub fn vsf_cmdio_set_alarm (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z25vsf_cmdio_get_cmd_and_argP11vsf_sessionP5mystrS2_i"] 
-pub fn vsf_cmdio_get_cmd_and_arg (p_sess : * mut vsf_session , p_cmd_str : &mystr , p_arg_str : &mystr , set_alarm : :: std :: os :: raw :: c_int) ;
+pub fn vsf_cmdio_get_cmd_and_arg (p_sess : &vsf_session , p_cmd_str : &mystr , p_arg_str : &mystr , set_alarm : :: std :: os :: raw :: c_int) ;
 
 }
  # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct vsf_sysutil_dir {
@@ -3202,22 +3202,22 @@ _unused : [u8 ; 0] ,
 }
  extern "C" {
 //# [link_name = "\u{1}_Z33vsf_ftpdataio_dispose_transfer_fdP11vsf_session"] 
-pub fn vsf_ftpdataio_dispose_transfer_fd (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_ftpdataio_dispose_transfer_fd (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z25vsf_ftpdataio_get_pasv_fdP11vsf_session"] 
-pub fn vsf_ftpdataio_get_pasv_fd (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_ftpdataio_get_pasv_fd (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z25vsf_ftpdataio_get_port_fdP11vsf_session"] 
-pub fn vsf_ftpdataio_get_port_fd (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_ftpdataio_get_port_fd (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z31vsf_ftpdataio_post_mark_connectP11vsf_session"] 
-pub fn vsf_ftpdataio_post_mark_connect (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_ftpdataio_post_mark_connect (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct vsf_transfer_ret {
@@ -3232,12 +3232,12 @@ assert_eq ! (:: std :: mem :: size_of :: < vsf_transfer_ret > ( ) , 16usize , co
 }
  extern "C" {
 //# [link_name = "\u{1}_Z27vsf_ftpdataio_transfer_fileP11vsf_sessioniiii"] 
-pub fn vsf_ftpdataio_transfer_file (p_sess : * mut vsf_session , remote_fd : :: std :: os :: raw :: c_int , file_fd : :: std :: os :: raw :: c_int , is_recv : :: std :: os :: raw :: c_int , is_ascii : :: std :: os :: raw :: c_int) -> vsf_transfer_ret ;
+pub fn vsf_ftpdataio_transfer_file (p_sess : &vsf_session , remote_fd : :: std :: os :: raw :: c_int , file_fd : :: std :: os :: raw :: c_int , is_recv : :: std :: os :: raw :: c_int , is_ascii : :: std :: os :: raw :: c_int) -> vsf_transfer_ret ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z26vsf_ftpdataio_transfer_dirP11vsf_sessioniP15vsf_sysutil_dirPK5mystrS5_S5_i"] 
-pub fn vsf_ftpdataio_transfer_dir (p_sess : * mut vsf_session , is_control : :: std :: os :: raw :: c_int , p_dir : * mut vsf_sysutil_dir , p_base_dir_str : * const mystr , p_option_str : * const mystr , p_filter_str : * const mystr , is_verbose : :: std :: os :: raw :: c_int) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_ftpdataio_transfer_dir (p_sess : &vsf_session , is_control : :: std :: os :: raw :: c_int , p_dir : * mut vsf_sysutil_dir , p_base_dir_str : * const mystr , p_option_str : * const mystr , p_filter_str : * const mystr , is_verbose : :: std :: os :: raw :: c_int) -> :: std :: os :: raw :: c_int ;
 
 }
  # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct pt_sandbox {
@@ -3300,32 +3300,32 @@ pub fn vsf_sysutil_parse_uchar_string_sep (p_str : * const mystr , sep : :: std 
  pub type EVSFLogEntryType = u32 ;
  extern "C" {
 //# [link_name = "\u{1}_Z12vsf_log_initP11vsf_session"] 
-pub fn vsf_log_init (p_sess : * mut vsf_session) ;
+pub fn vsf_log_init (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z19vsf_log_start_entryP11vsf_session16EVSFLogEntryType"] 
-pub fn vsf_log_start_entry (p_sess : * mut vsf_session , what : EVSFLogEntryType) ;
+pub fn vsf_log_start_entry (p_sess : &vsf_session , what : EVSFLogEntryType) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z21vsf_log_entry_pendingP11vsf_session"] 
-pub fn vsf_log_entry_pending (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_log_entry_pending (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z19vsf_log_clear_entryP11vsf_session"] 
-pub fn vsf_log_clear_entry (p_sess : * mut vsf_session) ;
+pub fn vsf_log_clear_entry (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z14vsf_log_do_logP11vsf_sessioni"] 
-pub fn vsf_log_do_log (p_sess : * mut vsf_session , succeeded : :: std :: os :: raw :: c_int) ;
+pub fn vsf_log_do_log (p_sess : &vsf_session , succeeded : :: std :: os :: raw :: c_int) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z12vsf_log_lineP11vsf_session16EVSFLogEntryTypeP5mystr"] 
-pub fn vsf_log_line (p_sess : * mut vsf_session , what : EVSFLogEntryType , p_str : &mystr) ;
+pub fn vsf_log_line (p_sess : &vsf_session , what : EVSFLogEntryType , p_str : &mystr) ;
 
 }
  extern "C" {
@@ -3338,10 +3338,10 @@ pub fn vsf_ls_populate_dir_list (p_list : &mystr_list , p_subdir_list : &mystr_l
 pub fn vsf_filename_passes_filter (p_filename_str : * const mystr , p_filter_str : * const mystr , iters : * mut :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
 
 }
- pub type str_netfd_read_t = :: std :: option :: Option < unsafe extern "C" fn (p_sess : * mut vsf_session , arg1 : * mut :: std :: os :: raw :: c_char , arg2 : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int > ;
+ pub type str_netfd_read_t = :: std :: option :: Option < unsafe extern "C" fn (p_sess : &vsf_session , arg1 : * mut :: std :: os :: raw :: c_char , arg2 : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int > ;
  extern "C" {
 //# [link_name = "\u{1}_Z15str_netfd_allocP11vsf_sessionP5mystrcPcjPFiS0_S3_jES5_"] 
-pub fn str_netfd_alloc (p_sess : * mut vsf_session , p_str : &mystr , term : :: std :: os :: raw :: c_char , p_readbuf : * mut :: std :: os :: raw :: c_char , maxlen : :: std :: os :: raw :: c_uint , p_peekfunc : str_netfd_read_t , p_readfunc : str_netfd_read_t) -> :: std :: os :: raw :: c_int ;
+pub fn str_netfd_alloc (p_sess : &vsf_session , p_str : &mystr , term : :: std :: os :: raw :: c_char , p_readbuf : * mut :: std :: os :: raw :: c_char , maxlen : :: std :: os :: raw :: c_uint , p_peekfunc : str_netfd_read_t , p_readfunc : str_netfd_read_t) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
@@ -3356,47 +3356,47 @@ pub fn str_netfd_write (p_str : * const mystr , fd : :: std :: os :: raw :: c_in
 }
  extern "C" {
 //# [link_name = "\u{1}_Z21vsf_one_process_startP11vsf_session"] 
-pub fn vsf_one_process_start (p_sess : * mut vsf_session) ;
+pub fn vsf_one_process_start (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z21vsf_one_process_loginP11vsf_sessionPK5mystr"] 
-pub fn vsf_one_process_login (p_sess : * mut vsf_session , p_pass_str : * const mystr) ;
+pub fn vsf_one_process_login (p_sess : &vsf_session , p_pass_str : * const mystr) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z34vsf_one_process_get_priv_data_sockP11vsf_session"] 
-pub fn vsf_one_process_get_priv_data_sock (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_one_process_get_priv_data_sock (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z28vsf_one_process_pasv_cleanupP11vsf_session"] 
-pub fn vsf_one_process_pasv_cleanup (p_sess : * mut vsf_session) ;
+pub fn vsf_one_process_pasv_cleanup (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z27vsf_one_process_pasv_activeP11vsf_session"] 
-pub fn vsf_one_process_pasv_active (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_one_process_pasv_active (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z22vsf_one_process_listenP11vsf_session"] 
-pub fn vsf_one_process_listen (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_ushort ;
+pub fn vsf_one_process_listen (p_sess : &vsf_session) -> :: std :: os :: raw :: c_ushort ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z27vsf_one_process_get_pasv_fdP11vsf_session"] 
-pub fn vsf_one_process_get_pasv_fd (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_one_process_get_pasv_fd (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z28vsf_one_process_chown_uploadP11vsf_sessioni"] 
-pub fn vsf_one_process_chown_upload (p_sess : * mut vsf_session , fd : :: std :: os :: raw :: c_int) ;
+pub fn vsf_one_process_chown_upload (p_sess : &vsf_session , fd : :: std :: os :: raw :: c_int) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z11handle_optsP11vsf_session"] 
-pub fn handle_opts (p_sess : * mut vsf_session) ;
+pub fn handle_opts (p_sess : &vsf_session) ;
 
 }
  extern "C" {
@@ -4095,47 +4095,47 @@ pub fn shm_unlink (__name : * const :: std :: os :: raw :: c_char) -> :: std :: 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z18process_post_loginP11vsf_session"] 
-pub fn process_post_login (p_sess : * mut vsf_session) ;
+pub fn process_post_login (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z25vsf_priv_parent_postloginP11vsf_session"] 
-pub fn vsf_priv_parent_postlogin (p_sess : * mut vsf_session) ;
+pub fn vsf_priv_parent_postlogin (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z15init_connectionP11vsf_session"] 
-pub fn init_connection (p_sess : * mut vsf_session) ;
+pub fn init_connection (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z28vsf_privop_get_ftp_port_sockP11vsf_sessionti"] 
-pub fn vsf_privop_get_ftp_port_sock (p_sess : * mut vsf_session , remote_port : :: std :: os :: raw :: c_ushort , use_port_sockaddr : :: std :: os :: raw :: c_int) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_privop_get_ftp_port_sock (p_sess : &vsf_session , remote_port : :: std :: os :: raw :: c_ushort , use_port_sockaddr : :: std :: os :: raw :: c_int) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z23vsf_privop_pasv_cleanupP11vsf_session"] 
-pub fn vsf_privop_pasv_cleanup (p_sess : * mut vsf_session) ;
+pub fn vsf_privop_pasv_cleanup (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z22vsf_privop_pasv_listenP11vsf_session"] 
-pub fn vsf_privop_pasv_listen (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_ushort ;
+pub fn vsf_privop_pasv_listen (p_sess : &vsf_session) -> :: std :: os :: raw :: c_ushort ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z22vsf_privop_pasv_activeP11vsf_session"] 
-pub fn vsf_privop_pasv_active (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_privop_pasv_active (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z22vsf_privop_accept_pasvP11vsf_session"] 
-pub fn vsf_privop_accept_pasv (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_privop_accept_pasv (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z24vsf_privop_do_file_chownP11vsf_sessioni"] 
-pub fn vsf_privop_do_file_chown (p_sess : * mut vsf_session , fd : :: std :: os :: raw :: c_int) ;
+pub fn vsf_privop_do_file_chown (p_sess : &vsf_session , fd : :: std :: os :: raw :: c_int) ;
 
 }
  pub const EVSFPrivopLoginResult_kVSFLoginNull : EVSFPrivopLoginResult = 0 ;
@@ -4145,27 +4145,27 @@ pub fn vsf_privop_do_file_chown (p_sess : * mut vsf_session , fd : :: std :: os 
  pub type EVSFPrivopLoginResult = u32 ;
  extern "C" {
 //# [link_name = "\u{1}_Z19vsf_privop_do_loginP11vsf_sessionPK5mystr"] 
-pub fn vsf_privop_do_login (p_sess : * mut vsf_session , p_pass_str : * const mystr) -> EVSFPrivopLoginResult ;
+pub fn vsf_privop_do_login (p_sess : &vsf_session , p_pass_str : * const mystr) -> EVSFPrivopLoginResult ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z14priv_sock_initP11vsf_session"] 
-pub fn priv_sock_init (p_sess : * mut vsf_session) ;
+pub fn priv_sock_init (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z15priv_sock_closeP11vsf_session"] 
-pub fn priv_sock_close (p_sess : * mut vsf_session) ;
+pub fn priv_sock_close (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z28priv_sock_set_parent_contextP11vsf_session"] 
-pub fn priv_sock_set_parent_context (p_sess : * mut vsf_session) ;
+pub fn priv_sock_set_parent_context (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z27priv_sock_set_child_contextP11vsf_session"] 
-pub fn priv_sock_set_child_context (p_sess : * mut vsf_session) ;
+pub fn priv_sock_set_child_context (p_sess : &vsf_session) ;
 
 }
  extern "C" {
@@ -4529,7 +4529,7 @@ pub fn ftp_write_str (p_sess : * const vsf_session , p_str : * const mystr , tar
 }
  extern "C" {
 //# [link_name = "\u{1}_Z13ftp_read_dataP11vsf_sessionPcj"] 
-pub fn ftp_read_data (p_sess : * mut vsf_session , p_buf : * mut :: std :: os :: raw :: c_char , len : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
+pub fn ftp_read_data (p_sess : &vsf_session , p_buf : * mut :: std :: os :: raw :: c_char , len : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
@@ -4539,7 +4539,7 @@ pub fn ftp_write_data (p_sess : * const vsf_session , p_buf : * const :: std :: 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z11ftp_getlineP11vsf_sessionP5mystrPc"] 
-pub fn ftp_getline (p_sess : * mut vsf_session , p_str : &mystr , p_buf : * mut :: std :: os :: raw :: c_char) -> :: std :: os :: raw :: c_int ;
+pub fn ftp_getline (p_sess : &vsf_session , p_str : &mystr , p_buf : * mut :: std :: os :: raw :: c_char) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
@@ -4986,12 +4986,12 @@ assert_eq ! (:: std :: mem :: size_of :: < vsf_session > ( ) , 480usize , concat
 }
  extern "C" {
 //# [link_name = "\u{1}_Z8ssl_readP11vsf_sessionPvPcj"] 
-pub fn ssl_read (p_sess : * mut vsf_session , p_ssl : * mut :: std :: os :: raw :: c_void , p_buf : * mut :: std :: os :: raw :: c_char , len : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
+pub fn ssl_read (p_sess : &vsf_session , p_ssl : * mut :: std :: os :: raw :: c_void , p_buf : * mut :: std :: os :: raw :: c_char , len : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z8ssl_peekP11vsf_sessionPvPcj"] 
-pub fn ssl_peek (p_sess : * mut vsf_session , p_ssl : * mut :: std :: os :: raw :: c_void , p_buf : * mut :: std :: os :: raw :: c_char , len : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
+pub fn ssl_peek (p_sess : &vsf_session , p_ssl : * mut :: std :: os :: raw :: c_void , p_buf : * mut :: std :: os :: raw :: c_char , len : :: std :: os :: raw :: c_uint) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
@@ -5006,67 +5006,67 @@ pub fn ssl_write_str (p_ssl : * mut :: std :: os :: raw :: c_void , p_str : * co
 }
  extern "C" {
 //# [link_name = "\u{1}_Z17ssl_read_into_strP11vsf_sessionPvP5mystr"] 
-pub fn ssl_read_into_str (p_sess : * mut vsf_session , p_ssl : * mut :: std :: os :: raw :: c_void , p_str : &mystr) -> :: std :: os :: raw :: c_int ;
+pub fn ssl_read_into_str (p_sess : &vsf_session , p_ssl : * mut :: std :: os :: raw :: c_void , p_str : &mystr) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z8ssl_initP11vsf_session"] 
-pub fn ssl_init (p_sess : * mut vsf_session) ;
+pub fn ssl_init (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z10ssl_acceptP11vsf_sessioni"] 
-pub fn ssl_accept (p_sess : * mut vsf_session , fd : :: std :: os :: raw :: c_int) -> :: std :: os :: raw :: c_int ;
+pub fn ssl_accept (p_sess : &vsf_session , fd : :: std :: os :: raw :: c_int) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z14ssl_data_closeP11vsf_session"] 
-pub fn ssl_data_close (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn ssl_data_close (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z21ssl_comm_channel_initP11vsf_session"] 
-pub fn ssl_comm_channel_init (p_sess : * mut vsf_session) ;
+pub fn ssl_comm_channel_init (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z37ssl_comm_channel_set_consumer_contextP11vsf_session"] 
-pub fn ssl_comm_channel_set_consumer_context (p_sess : * mut vsf_session) ;
+pub fn ssl_comm_channel_set_consumer_context (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z37ssl_comm_channel_set_producer_contextP11vsf_session"] 
-pub fn ssl_comm_channel_set_producer_context (p_sess : * mut vsf_session) ;
+pub fn ssl_comm_channel_set_producer_context (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z11handle_authP11vsf_session"] 
-pub fn handle_auth (p_sess : * mut vsf_session) ;
+pub fn handle_auth (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z11handle_pbszP11vsf_session"] 
-pub fn handle_pbsz (p_sess : * mut vsf_session) ;
+pub fn handle_pbsz (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z11handle_protP11vsf_session"] 
-pub fn handle_prot (p_sess : * mut vsf_session) ;
+pub fn handle_prot (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z21ssl_control_handshakeP11vsf_session"] 
-pub fn ssl_control_handshake (p_sess : * mut vsf_session) ;
+pub fn ssl_control_handshake (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z15ssl_add_entropyP11vsf_session"] 
-pub fn ssl_add_entropy (p_sess : * mut vsf_session) ;
+pub fn ssl_add_entropy (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z9ssl_slaveP11vsf_session"] 
-pub fn ssl_slave (p_sess : * mut vsf_session) ;
+pub fn ssl_slave (p_sess : &vsf_session) ;
 
 }
  # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct vsf_client_launch {
@@ -5870,12 +5870,12 @@ pub fn vsf_sysutil_sockaddr_alloc (p_sockptr : * mut * mut vsf_sysutil_sockaddr)
 }
  extern "C" {
 //# [link_name = "\u{1}_Z26vsf_sysutil_sockaddr_clearPP20vsf_sysutil_sockaddr"] 
-pub fn vsf_sysutil_sockaddr_clear (p_sockptr : * mut * mut vsf_sysutil_sockaddr) ;
+pub fn vsf_sysutil_sockaddr_clear (p_sockptr : &*mut vsf_sysutil_sockaddr) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z31vsf_sysutil_sockaddr_alloc_ipv4PP20vsf_sysutil_sockaddr"] 
-pub fn vsf_sysutil_sockaddr_alloc_ipv4 (p_sockptr : * mut * mut vsf_sysutil_sockaddr) ;
+pub fn vsf_sysutil_sockaddr_alloc_ipv4 (p_sockptr : && vsf_sysutil_sockaddr) ;
 
 }
  extern "C" {
@@ -5885,7 +5885,7 @@ pub fn vsf_sysutil_sockaddr_alloc_ipv6 (p_sockptr : * mut * mut vsf_sysutil_sock
 }
  extern "C" {
 //# [link_name = "\u{1}_Z26vsf_sysutil_sockaddr_clonePP20vsf_sysutil_sockaddrPKS_"] 
-pub fn vsf_sysutil_sockaddr_clone (p_sockptr : * mut * mut vsf_sysutil_sockaddr , p_src : * const vsf_sysutil_sockaddr) ;
+pub fn vsf_sysutil_sockaddr_clone (p_sockptr : &&vsf_sysutil_sockaddr , p_src : * const vsf_sysutil_sockaddr) ;
 
 }
  extern "C" {
@@ -5945,7 +5945,7 @@ pub fn vsf_sysutil_sockaddr_get_raw_addr (p_sockaddr : * mut vsf_sysutil_sockadd
 }
  extern "C" {
 //# [link_name = "\u{1}_Z28vsf_sysutil_sockaddr_ipv6_v4PK20vsf_sysutil_sockaddr"] 
-pub fn vsf_sysutil_sockaddr_ipv6_v4 (p_sockaddr : * const vsf_sysutil_sockaddr) -> * const :: std :: os :: raw :: c_void ;
+pub fn vsf_sysutil_sockaddr_ipv6_v4 (p_sockaddr : &vsf_sysutil_sockaddr) -> * const :: std :: os :: raw :: c_void ;
 
 }
  extern "C" {
@@ -6070,7 +6070,7 @@ pub fn vsf_sysutil_recv_peek (fd : :: std :: os :: raw :: c_int , p_buf : * mut 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z21vsf_sysutil_inet_ntopPK20vsf_sysutil_sockaddr"] 
-pub fn vsf_sysutil_inet_ntop (p_sockptr : * const vsf_sysutil_sockaddr) -> * const :: std :: os :: raw :: c_char ;
+pub fn vsf_sysutil_inet_ntop (p_sockptr : & vsf_sysutil_sockaddr) -> * const :: std :: os :: raw :: c_char ;
 
 }
  extern "C" {
@@ -6080,7 +6080,7 @@ pub fn vsf_sysutil_inet_ntoa (p_raw_addr : * const :: std :: os :: raw :: c_void
 }
  extern "C" {
 //# [link_name = "\u{1}_Z21vsf_sysutil_inet_atonPKcP20vsf_sysutil_sockaddr"] 
-pub fn vsf_sysutil_inet_aton (p_text : * const :: std :: os :: raw :: c_char , p_addr : * mut vsf_sysutil_sockaddr) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_sysutil_inet_aton (p_text : * const :: std :: os :: raw :: c_char , p_addr : &vsf_sysutil_sockaddr) -> :: std :: os :: raw :: c_int ;
 
 }
  # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct vsf_sysutil_group {
@@ -6852,42 +6852,42 @@ pub static mut tunable_cmds_denied : * const :: std :: os :: raw :: c_char ;
 }
  extern "C" {
 //# [link_name = "\u{1}_Z21vsf_two_process_startP11vsf_session"] 
-pub fn vsf_two_process_start (p_sess : * mut vsf_session) ;
+pub fn vsf_two_process_start (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z21vsf_two_process_loginP11vsf_sessionPK5mystr"] 
-pub fn vsf_two_process_login (p_sess : * mut vsf_session , p_pass_str : * const mystr) ;
+pub fn vsf_two_process_login (p_sess : &vsf_session , p_pass_str : * const mystr) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z34vsf_two_process_get_priv_data_sockP11vsf_session"] 
-pub fn vsf_two_process_get_priv_data_sock (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_two_process_get_priv_data_sock (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z28vsf_two_process_pasv_cleanupP11vsf_session"] 
-pub fn vsf_two_process_pasv_cleanup (p_sess : * mut vsf_session) ;
+pub fn vsf_two_process_pasv_cleanup (p_sess : &vsf_session) ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z27vsf_two_process_pasv_activeP11vsf_session"] 
-pub fn vsf_two_process_pasv_active (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_two_process_pasv_active (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z22vsf_two_process_listenP11vsf_session"] 
-pub fn vsf_two_process_listen (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_ushort ;
+pub fn vsf_two_process_listen (p_sess : &vsf_session) -> :: std :: os :: raw :: c_ushort ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z27vsf_two_process_get_pasv_fdP11vsf_session"] 
-pub fn vsf_two_process_get_pasv_fd (p_sess : * mut vsf_session) -> :: std :: os :: raw :: c_int ;
+pub fn vsf_two_process_get_pasv_fd (p_sess : &vsf_session) -> :: std :: os :: raw :: c_int ;
 
 }
  extern "C" {
 //# [link_name = "\u{1}_Z28vsf_two_process_chown_uploadP11vsf_sessioni"] 
-pub fn vsf_two_process_chown_upload (p_sess : * mut vsf_session , fd : :: std :: os :: raw :: c_int) ;
+pub fn vsf_two_process_chown_upload (p_sess : &vsf_session , fd : :: std :: os :: raw :: c_int) ;
 
 }
  extern "C" {
