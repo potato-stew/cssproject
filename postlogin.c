@@ -525,7 +525,7 @@ handle_cdup(struct vsf_session* p_sess)
 }
 */
 
-
+/*
 static int
 port_active(struct vsf_session* p_sess)
 {
@@ -562,7 +562,7 @@ pasv_active(struct vsf_session* p_sess)
   }
   return ret;
 }
-
+*/
 /*
 static void
 port_cleanup(struct vsf_session* p_sess)
