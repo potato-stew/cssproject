@@ -427,6 +427,72 @@ unsafe extern "C" fn vsf_sysutil_get_file_offset(file_fd: c_int) -> filesize_t
   return retval;
 }
 
+unsafe extern "C" fn vsf_sysutil_lseek_to(fd: c_int, seek_pos: filesize_t )
+{
+  let mut retval: filesize_t;
+  if seek_pos < 0
+  {
+    die(str_to_const_char("negative seek_pos in vsf_sysutil_lseek_to"));
+  }
+  retval = lseek(fd, seek_pos, SEEK_SET.try_into().unwrap());
+  if retval < 0
+  {
+    die(str_to_const_char("lseek"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_lseek_end(fd: c_int)
+{
+  let mut retval: filesize_t ;
+  retval = lseek(fd, 0, SEEK_END.try_into().unwrap());
+  if retval < 0
+  {
+    die(str_to_const_char("lseek"));
+  }
+}
+
+
+unsafe extern "C" fn vsf_sysutil_malloc(size: c_uint) -> *mut c_void
+{
+  let mut p_ret: *mut c_void;
+  /* Paranoia - what if we got an integer overflow/underflow? */
+  if size == 0 || size > WINT_MAX
+  {
+    bug(str_to_const_char("zero or big size in vsf_sysutil_malloc"));
+  }  
+  p_ret = malloc(size as usize);
+  if p_ret == ptr::null_mut()
+  {
+    die(str_to_const_char("malloc"));
+  }
+  return p_ret;
+}
+
+unsafe extern "C" fn vsf_sysutil_realloc(p_ptr: *mut c_void, size: c_uint)-> *mut c_void
+{
+  let mut p_ret: *mut c_void;
+  if size == 0 || size > WINT_MAX
+  {
+    bug(str_to_const_char("zero or big size in vsf_sysutil_realloc"));
+  }
+  p_ret = realloc(p_ptr, size as usize);
+  if p_ret == ptr::null_mut()
+  {
+    die(str_to_const_char("realloc"));
+  }
+  return p_ret;
+}
+
+unsafe extern "C" fn vsf_sysutil_free( p_ptr: *mut c_void)
+{
+  if p_ptr == ptr::null_mut()
+  {
+    bug(str_to_const_char("vsf_sysutil_free got a null pointer"));
+  }
+  free(p_ptr);
+}
+
+
 
 unsafe fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
 {
