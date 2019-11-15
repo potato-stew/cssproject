@@ -212,3 +212,9 @@ pub unsafe extern "C" fn pasv_active (p_sess: &vsf_session ) -> c_int {
 
   return ret;
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn handle_retr (p_sess: &vsf_session, is_http: c_int) {
+
+}
+
