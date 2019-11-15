@@ -1,5 +1,6 @@
 use std::ffi::CString;
 use std::os::raw::c_char;
+use std::ptr;
 
 pub fn str_to_const_char (s: &str) -> *const c_char {
   return CString::new(s).unwrap().as_ptr();
@@ -129,7 +130,7 @@ Self :: new ()
 
 }
  pub const VSFTP_DEFAULT_CONFIG : & 'static [u8 ; 17usize] = b"/etc/vsftpd.conf\0" ;
- pub const VSFTP_COMMAND_FD : u32 = 0 ;
+ pub const VSFTP_COMMAND_FD : i32 = 0 ;
  pub const VSFTP_PASSWORD_MAX : u32 = 128 ;
  pub const VSFTP_USERNAME_MAX : u32 = 128 ;
  pub const VSFTP_MAX_COMMAND_LINE : u32 = 4096 ;
@@ -3221,7 +3222,8 @@ pub fn vsf_ftpdataio_post_mark_connect (p_sess : &vsf_session) -> :: std :: os :
 
 }
  # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct vsf_transfer_ret {
-pub retval : :: std :: os :: raw :: c_int , pub transferred : filesize_t ,
+pub retval : :: std :: os :: raw :: c_int ,
+pub transferred : filesize_t ,
 }
  # [test] fn bindgen_test_layout_vsf_transfer_ret () {
 assert_eq ! (:: std :: mem :: size_of :: < vsf_transfer_ret > ( ) , 16usize , concat ! ( "Size of: " , stringify ! ( vsf_transfer_ret ) )) ;
@@ -4588,6 +4590,7 @@ pub p_buf : * mut :: std :: os :: raw :: c_char ,
 pub len : :: std :: os :: raw :: c_uint ,
 pub alloc_bytes : :: std :: os :: raw :: c_uint ,
 }
+
  # [test] fn bindgen_test_layout_mystr () {
 assert_eq ! (:: std :: mem :: size_of :: < mystr > ( ) , 16usize , concat ! ( "Size of: " , stringify ! ( mystr ) )) ;
  assert_eq ! (:: std :: mem :: align_of :: < mystr > ( ) , 8usize , concat ! ( "Alignment of " , stringify ! ( mystr ) )) ;
