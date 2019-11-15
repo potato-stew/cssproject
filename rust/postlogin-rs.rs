@@ -317,7 +317,7 @@ pub unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) 
 
   let remote_fd: c_int;
   let opened_file: c_int;
-  let is_ascii: c_int = 0;
+  let mut is_ascii: c_int = 0;
 
   let offset: filesize_t = p_sess.restart_pos;
   p_sess.restart_pos = 0;
@@ -371,7 +371,7 @@ pub unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) 
      {
       vsf_log_clear_entry(p_sess);
      }
-    goto file_close_out;
+    //goto file_close_out;
   }
 
   // Now deactive O_NONBLOCK, otherwise we have a problem on DMAPI filesystems
@@ -382,7 +382,7 @@ pub unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) 
       0 == vsf_sysutil_statbuf_is_readable_other(s_p_statbuf)
    {
     vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Failed to open file."));
-    goto file_close_out;
+    //goto file_close_out;
    }
 
   // Set the download offset (from REST) if any
@@ -419,7 +419,7 @@ pub unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) 
     remote_fd = get_remote_transfer_fd(p_sess, str_getbuf(&s_mark_str));
     if 0 != vsf_sysutil_retval_is_error(remote_fd)
      {
-      goto port_pasv_cleanup_out;
+      //goto port_pasv_cleanup_out;
      }
    }
 
@@ -440,7 +440,7 @@ pub unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) 
 
   if 0 != is_http
    {
-    goto file_close_out;
+    //goto file_close_out;
    }
 
   // Emit status message _after_ blocking dispose call to avoid buggy FTP
