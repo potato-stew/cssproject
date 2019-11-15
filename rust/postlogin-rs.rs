@@ -362,7 +362,7 @@ pub unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) 
 
   // No games please
   if 0 == vsf_sysutil_statbuf_is_regfile(s_p_statbuf)
-  {
+   {
     // Note - pretend open failed
     vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Failed to open file."));
     // Irritating FireFox does RETR on directories, so avoid logging this
@@ -371,8 +371,9 @@ pub unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) 
      {
       vsf_log_clear_entry(p_sess);
      }
-    //goto file_close_out;
-  }
+    vsf_sysutil_close(opened_file);
+    return;
+   }
 
   // Now deactive O_NONBLOCK, otherwise we have a problem on DMAPI filesystems
   // such as XFS DMAPI.
@@ -382,7 +383,8 @@ pub unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) 
       0 == vsf_sysutil_statbuf_is_readable_other(s_p_statbuf)
    {
     vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Failed to open file."));
-    //goto file_close_out;
+    vsf_sysutil_close(opened_file);
+    return;
    }
 
   // Set the download offset (from REST) if any
@@ -410,6 +412,7 @@ pub unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) 
                         vsf_sysutil_statbuf_get_size(s_p_statbuf));
   str_append_text(&s_mark_str, str_to_const_char(" bytes)."));
 
+  let mut goto_port_pasv_cleanup = 0;
   if 0 != is_http
    {
     remote_fd = VSFTP_COMMAND_FD;
@@ -420,53 +423,60 @@ pub unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) 
     if 0 != vsf_sysutil_retval_is_error(remote_fd)
      {
       //goto port_pasv_cleanup_out;
+      goto_port_pasv_cleanup = 1;
      }
    }
 
-  trans_ret = vsf_ftpdataio_transfer_file(p_sess, remote_fd,
-                                          opened_file, 0, is_ascii);
-  if 0 == is_http &&
-      1 != vsf_ftpdataio_dispose_transfer_fd(p_sess) &&
-      0 == trans_ret.retval
+  if 0 == goto_port_pasv_cleanup
    {
-    trans_ret.retval = -2;
-   }
-  p_sess.transfer_size = trans_ret.transferred;
-  // Log _after_ the blocking dispose call, so we get transfer times right
-  if 0 == trans_ret.retval
-   {
-    vsf_log_do_log(p_sess, 1);
-   }
-
-  if 0 != is_http
-   {
-    //goto file_close_out;
-   }
-
-  // Emit status message _after_ blocking dispose call to avoid buggy FTP
-  // clients truncating the transfer.
-  if -1 == trans_ret.retval
-   {
-    vsf_cmdio_write(p_sess, FTP_BADSENDFILE, str_to_const_char("Failure reading local file."));
-   }
-  else if -2 == trans_ret.retval
-   {
-    if 0 == p_sess.data_timeout
+    trans_ret = vsf_ftpdataio_transfer_file(p_sess, remote_fd,
+                                              opened_file, 0, is_ascii);
+    if 0 == is_http &&
+        1 != vsf_ftpdataio_dispose_transfer_fd(p_sess) &&
+        0 == trans_ret.retval
      {
-      vsf_cmdio_write(p_sess, FTP_BADSENDNET,
-                      str_to_const_char("Failure writing network stream."));
+      trans_ret.retval = -2;
      }
-   }
-  else
-   {
-    vsf_cmdio_write(p_sess, FTP_TRANSFEROK, str_to_const_char("Transfer complete."));
+    p_sess.transfer_size = trans_ret.transferred;
+    // Log _after_ the blocking dispose call, so we get transfer times right
+    if 0 == trans_ret.retval
+     {
+      vsf_log_do_log(p_sess, 1);
+     }
+
+    if 0 != is_http
+     {
+      vsf_sysutil_close(opened_file);
+      return;
+     }
+
+    // Emit status message _after_ blocking dispose call to avoid buggy FTP
+    // clients truncating the transfer.
+    if -1 == trans_ret.retval
+     {
+      vsf_cmdio_write(p_sess, FTP_BADSENDFILE, str_to_const_char("Failure reading local file."));
+     }
+    else if -2 == trans_ret.retval
+     {
+      if 0 == p_sess.data_timeout
+       {
+        vsf_cmdio_write(p_sess, FTP_BADSENDNET,
+                        str_to_const_char("Failure writing network stream."));
+       }
+     }
+    else
+     {
+      vsf_cmdio_write(p_sess, FTP_TRANSFEROK, str_to_const_char("Transfer complete."));
+     }
+
+    check_abor(p_sess);
    }
 
-  check_abor(p_sess);
-//  port_pasv_cleanup_out:
+  // port_pasv_cleanup_out:
+
   port_cleanup(p_sess);
   pasv_cleanup(p_sess);
-//  file_close_out:
   vsf_sysutil_close(opened_file);
+
 }
 
