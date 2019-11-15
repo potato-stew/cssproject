@@ -7938,10 +7938,7 @@ assert_eq ! (:: std :: mem :: size_of :: < parseconf_str_setting > ( ) , 16usize
 pub static mut parseconf_str_array : [parseconf_str_setting ; 33usize] ;
 
 }
- extern "C" {
-pub fn __errno_location () -> * mut :: std :: os :: raw :: c_int ;
 
-}
  extern "C" {
 pub static mut program_invocation_name : * mut :: std :: os :: raw :: c_char ;
 
@@ -9519,6 +9516,11 @@ pub fn nice (__inc : :: std :: os :: raw :: c_int) -> :: std :: os :: raw :: c_i
 pub fn _exit (__status : :: std :: os :: raw :: c_int) ;
 
 }
+
+extern "C"{
+  pub fn __errno_location () -> *mut :: std::os ::raw::c_int;
+}
+
  pub const _PC_LINK_MAX : _bindgen_ty_20 = 0 ;
  pub const _PC_MAX_CANON : _bindgen_ty_20 = 1 ;
  pub const _PC_MAX_INPUT : _bindgen_ty_20 = 2 ;
