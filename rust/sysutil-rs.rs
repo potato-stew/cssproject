@@ -304,13 +304,13 @@ fn vsf_sysutil_clear_alarm()
   }
 }
 
-fn vsf_sysutil_read(fd: c_int, p_buf: *mut c_void, size: c_uint) -> c_int
+unsafe extern "C" fn vsf_sysutil_read(fd: c_int, p_buf: *mut c_void, size: c_uint) -> c_int
 {
   while true
   {
     //call to unistd.h
     let mut retval: c_int = read(fd, p_buf, size.try_into().unwrap()).try_into().unwrap();
-    let mut saved_errno: c_int = errno;
+    let mut saved_errno: c_int = (*__errno_location ());
     vsf_sysutil_check_pending_actions(EVSFSysUtilInterruptContext_kVSFSysUtilIO, retval, fd);
     if retval < 0 && saved_errno == EINTR.try_into().unwrap()
     {
