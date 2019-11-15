@@ -216,6 +216,30 @@ unsafe extern "C" fn vsf_sysutil_set_sighandler(sig: c_uint, p_handlefunc: unsaf
   }
 }
 
+unsafe extern "C" fn vsf_sysutil_block_sig(sig: EVSFSysUtilSignal)
+{
+  //sigset_t is a struct
+  let mut sset= sigset_t :: default();
+  let mut retval : c_int;
+  let mut realsig: c_int = vsf_sysutil_translate_sig(sig).try_into().unwrap();
+  retval = sigemptyset(&mut sset);
+  if retval != 0
+  {
+    die(str_to_const_char("sigemptyset"));
+  }
+  retval = sigaddset(&mut sset, realsig);
+  if retval != 0
+  {
+    die(str_to_const_char("sigaddset"));
+  }
+  retval = sigprocmask(SIG_BLOCK.try_into().unwrap(), & sset, ptr::null_mut());
+  if retval != 0
+  {
+    die(str_to_const_char("sigprocmask"));
+  }
+}
+
+
 unsafe fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
 {
   /* Safety */
