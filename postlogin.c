@@ -38,6 +38,11 @@
 //static int port_active(struct vsf_session* p_sess);
 //static int pasv_active(struct vsf_session* p_sess);
 //static void handle_retr(struct vsf_session* p_sess, int is_http);
+//static int data_transfer_checks_ok(struct vsf_session* p_sess);
+//static void prepend_path_to_filename(struct mystr* p_str);
+//static int get_remote_transfer_fd(struct vsf_session* p_sess,
+//                                  const char* p_status_msg);
+//static void check_abor(struct vsf_session* p_sess);
 
 extern void handle_pwd(struct vsf_session* p_sess);
 extern void handle_cwd(struct vsf_session* p_sess);
@@ -48,6 +53,11 @@ extern void handle_cdup(struct vsf_session* p_sess);
 extern int port_active(struct vsf_session* p_sess);
 extern int pasv_active(struct vsf_session* p_sess);
 extern void handle_retr(struct vsf_session* p_sess, int is_http);
+extern int data_transfer_checks_ok(struct vsf_session* p_sess);
+extern void prepend_path_to_filename(struct mystr* p_str);
+extern int get_remote_transfer_fd(struct vsf_session* p_sess,
+                                  const char* p_status_msg);
+extern void check_abor(struct vsf_session* p_sess);
 
 static void handle_list(struct vsf_session* p_sess);
 static void handle_type(struct vsf_session* p_sess);
@@ -79,16 +89,11 @@ static void handle_http(struct vsf_session* p_sess);
 
 static void handle_dir_common(struct vsf_session* p_sess, int full_details,
                               int stat_cmd);
-static void prepend_path_to_filename(struct mystr* p_str);
-static int get_remote_transfer_fd(struct vsf_session* p_sess,
-                                  const char* p_status_msg);
-static void check_abor(struct vsf_session* p_sess);
 static void handle_sigurg(void* p_private);
 static void handle_upload_common(struct vsf_session* p_sess, int is_append,
                                  int is_unique);
 static void get_unique_filename(struct mystr* p_outstr,
                                 const struct mystr* p_base);
-static int data_transfer_checks_ok(struct vsf_session* p_sess);
 //static void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
 void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
 
@@ -1381,18 +1386,18 @@ handle_nlst(struct vsf_session* p_sess)
   handle_dir_common(p_sess, 0, 0);
 }
 
+/*
 static void
 prepend_path_to_filename(struct mystr* p_str)
 {
   static struct mystr s_tmp_str;
-  /* Only prepend current working directory if the incoming filename is
-   * relative
-   */
+  // Only prepend current working directory if the incoming filename is
+  // relative
   str_empty(&s_tmp_str);
   if (str_isempty(p_str) || str_get_char_at(p_str, 0) != '/')
   {
     str_getcwd(&s_tmp_str);
-    /* Careful to not emit // if we are in directory / (common with chroot) */
+    // Careful to not emit // if we are in directory / (common with chroot)
     if (str_isempty(&s_tmp_str) ||
         str_get_char_at(&s_tmp_str, str_getlen(&s_tmp_str) - 1) != '/')
     {
@@ -1402,7 +1407,7 @@ prepend_path_to_filename(struct mystr* p_str)
   str_append_str(&s_tmp_str, p_str);
   str_copy(p_str, &s_tmp_str);
 }
-
+*/
 
 static void
 handle_sigurg(void* p_private)
@@ -1447,6 +1452,7 @@ handle_sigurg(void* p_private)
   str_free(&real_cmd_str);
 }
 
+/*
 static int
 get_remote_transfer_fd(struct vsf_session* p_sess, const char* p_status_msg)
 {
@@ -1476,17 +1482,20 @@ get_remote_transfer_fd(struct vsf_session* p_sess, const char* p_status_msg)
   }
   return remote_fd;
 }
+*/
 
+/*
 static void
 check_abor(struct vsf_session* p_sess)
 {
-  /* If the client sent ABOR, respond to it here */
+  // If the client sent ABOR, respond to it here
   if (p_sess->abor_received)
   {
     p_sess->abor_received = 0;
     vsf_cmdio_write(p_sess, FTP_ABOROK, "ABOR successful.");
   }
 }
+*/
 
 static void
 handle_size(struct vsf_session* p_sess)
@@ -1917,6 +1926,7 @@ handle_stat_file(struct vsf_session* p_sess)
   handle_dir_common(p_sess, 1, 1);
 }
 
+/*
 static int
 data_transfer_checks_ok(struct vsf_session* p_sess)
 {
@@ -1935,6 +1945,7 @@ data_transfer_checks_ok(struct vsf_session* p_sess)
   }
   return 1;
 }
+*/
 
 //static
 void
