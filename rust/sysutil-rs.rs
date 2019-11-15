@@ -340,6 +340,41 @@ unsafe extern "C" fn vsf_sysutil_write(fd: c_int, p_buf: *mut c_void, size: c_ui
   return -1;  
 }
 
+unsafe extern "C" fn vsf_sysutil_read_loop(fd: c_int, p_buf: *mut c_void, mut size: c_uint) -> c_int
+{
+  let mut retval: c_int;
+  let mut num_read: c_int = 0;
+  if size > WINT_MAX
+  {
+    die(str_to_const_char("size too big in vsf_sysutil_read_loop"));
+  }
+  while true
+  {
+    let retval: c_int = vsf_sysutil_read(fd, p_buf.offset(num_read.try_into().unwrap()) as *mut _ as *mut c_void, size);
+    if retval < 0
+    {
+      return retval;
+    }
+    else if retval == 0
+    {
+      /* Read all we're going to read.. */
+      return num_read; 
+    }
+    if retval > size.try_into().unwrap()
+    {
+      die(str_to_const_char("retval too big in vsf_sysutil_read_loop"));
+    }
+    num_read += retval;
+    let retval: c_uint = retval.try_into().unwrap();
+    size = size - retval;
+    if (size == 0)
+    {
+      /* Hit the read target, cool. */
+      return num_read;
+    }
+  }
+  return 1;
+}
 
 
 unsafe fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
