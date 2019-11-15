@@ -323,9 +323,9 @@ unsafe extern "C" fn vsf_sysutil_read(fd: c_int, p_buf: *mut c_void, size: c_uin
 }
 
 
-fn vsf_sysutil_write(fd: c_int, p_buf: *mut c_void, size: c_uint) -> c_int
+unsafe extern "C" fn vsf_sysutil_write(fd: c_int, p_buf: *mut c_void, size: c_uint) -> c_int
 {
-  while (1)
+  while true
   {
     //call to unistd.h
     let mut retval: c_int = write(fd, p_buf, size.try_into().unwrap()).try_into().unwrap();
@@ -340,39 +340,7 @@ fn vsf_sysutil_write(fd: c_int, p_buf: *mut c_void, size: c_uint) -> c_int
   return -1;  
 }
 
-fn vsf_sysutil_read_loop(const int fd, void* p_buf, unsigned int size) -> c_int
-{
-  int retval;
-  int num_read = 0;
-  if (size > INT_MAX)
-  {
-    die("size too big in vsf_sysutil_read_loop");
-  }
-  while (1)
-  {
-    retval = vsf_sysutil_read(fd, (char*)p_buf + num_read, size);
-    if (retval < 0)
-    {
-      return retval;
-    }
-    else if (retval == 0)
-    {
-      /* Read all we're going to read.. */
-      return num_read; 
-    }
-    if ((unsigned int) retval > size)
-    {
-      die("retval too big in vsf_sysutil_read_loop");
-    }
-    num_read += retval;
-    size -= (unsigned int) retval;
-    if (size == 0)
-    {
-      /* Hit the read target, cool. */
-      return num_read;
-    }
-  }
-}
+
 
 unsafe fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
 {
