@@ -43,6 +43,9 @@
 //static int get_remote_transfer_fd(struct vsf_session* p_sess,
 //                                  const char* p_status_msg);
 //static void check_abor(struct vsf_session* p_sess);
+//static void handle_sigurg(void* p_private);
+//static void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
+//static void handle_http(struct vsf_session* p_sess);
 
 extern void handle_pwd(struct vsf_session* p_sess);
 extern void handle_cwd(struct vsf_session* p_sess);
@@ -58,6 +61,10 @@ extern void prepend_path_to_filename(struct mystr* p_str);
 extern int get_remote_transfer_fd(struct vsf_session* p_sess,
                                   const char* p_status_msg);
 extern void check_abor(struct vsf_session* p_sess);
+extern void handle_sigurg(void* p_private);
+extern void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
+extern void handle_http(struct vsf_session* p_sess);
+
 
 static void handle_list(struct vsf_session* p_sess);
 static void handle_type(struct vsf_session* p_sess);
@@ -85,17 +92,13 @@ static void handle_stat(struct vsf_session* p_sess);
 static void handle_stat_file(struct vsf_session* p_sess);
 static void handle_logged_in_user(struct vsf_session* p_sess);
 static void handle_logged_in_pass(struct vsf_session* p_sess);
-static void handle_http(struct vsf_session* p_sess);
 
 static void handle_dir_common(struct vsf_session* p_sess, int full_details,
                               int stat_cmd);
-static void handle_sigurg(void* p_private);
 static void handle_upload_common(struct vsf_session* p_sess, int is_append,
                                  int is_unique);
 static void get_unique_filename(struct mystr* p_outstr,
                                 const struct mystr* p_base);
-//static void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
-void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
 
 void
 process_post_login(struct vsf_session* p_sess)
@@ -1409,6 +1412,7 @@ prepend_path_to_filename(struct mystr* p_str)
 }
 */
 
+/*
 static void
 handle_sigurg(void* p_private)
 {
@@ -1417,17 +1421,16 @@ handle_sigurg(void* p_private)
   struct mystr real_cmd_str = INIT_MYSTR;
   unsigned int len;
   struct vsf_session* p_sess = (struct vsf_session*) p_private;
-  /* Did stupid client sent something OOB without a data connection? */
+  // Did stupid client sent something OOB without a data connection?
   if (p_sess->data_fd == -1)
   {
     return;
   }
-  /* Get the async command - blocks (use data timeout alarm) */
+  // Get the async command - blocks (use data timeout alarm)
   vsf_cmdio_get_cmd_and_arg(p_sess, &async_cmd_str, &async_arg_str, 0);
-  /* Chop off first four characters; they are telnet characters. The client
-   * should have sent the first two normally and the second two as urgent
-   * data.
-   */
+  // Chop off first four characters; they are telnet characters. The client
+  // should have sent the first two normally and the second two as urgent
+  // data.
   len = str_getlen(&async_cmd_str);
   if (len >= 4)
   {
@@ -1436,21 +1439,21 @@ handle_sigurg(void* p_private)
   if (str_equal_text(&real_cmd_str, "ABOR"))
   {
     p_sess->abor_received = 1;
-    /* This is failok because of a small race condition; the SIGURG might
-     * be raised after the data socket is closed, but before data_fd is
-     * set to -1.
-     */
+    // This is failok because of a small race condition; the SIGURG might
+    // be raised after the data socket is closed, but before data_fd is
+    // set to -1.
     vsf_sysutil_shutdown_failok(p_sess->data_fd);
   }
   else
   {
-    /* Sorry! */
+    // Sorry!
     vsf_cmdio_write(p_sess, FTP_BADCMD, "Unknown command.");
   }
   str_free(&async_cmd_str);
   str_free(&async_arg_str);
   str_free(&real_cmd_str);
 }
+*/
 
 /*
 static int
@@ -1947,8 +1950,8 @@ data_transfer_checks_ok(struct vsf_session* p_sess)
 }
 */
 
-//static
-void
+/*
+static void
 resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess)
 {
   unsigned int len = str_getlen(p_str);
@@ -1981,6 +1984,7 @@ resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess)
     }
   }
 }
+*/
 
 static void handle_logged_in_user(struct vsf_session* p_sess)
 {
@@ -2003,19 +2007,19 @@ static void handle_logged_in_pass(struct vsf_session* p_sess)
   vsf_cmdio_write(p_sess, FTP_LOGINOK, "Already logged in.");
 }
 
+/*
 static void
 handle_http(struct vsf_session* p_sess)
 {
-  /* Warning: Doesn't respect cmds_allowed etc. because there is currently only
-   * one command (GET)!
-   * HTTP likely doesn't respect other important FTP options. I don't think
-   * logging works.
-   */
+  // Warning: Doesn't respect cmds_allowed etc. because there is currently only
+  // one command (GET)!
+  // HTTP likely doesn't respect other important FTP options. I don't think
+  // logging works.
   if (!tunable_download_enable)
   {
     bug("HTTP needs download - fix your config");
   }
-  /* Eat the HTTP headers, which we don't care about. */
+  // Eat the HTTP headers, which we don't care about.
   do
   {
     vsf_cmdio_get_cmd_and_arg(p_sess, &p_sess->ftp_cmd_str,
@@ -2028,7 +2032,7 @@ handle_http(struct vsf_session* p_sess)
   vsf_cmdio_write_raw(p_sess, "Connection: close\r\n");
   vsf_cmdio_write_raw(p_sess, "X-Frame-Options: SAMEORIGIN\r\n");
   vsf_cmdio_write_raw(p_sess, "X-Content-Type-Options: nosniff\r\n");
-  /* Split the path from the HTTP/1.x */
+  // Split the path from the HTTP/1.x
   str_split_char(&p_sess->http_get_arg, &p_sess->ftp_arg_str, ' ');
   str_copy(&p_sess->ftp_arg_str, &p_sess->http_get_arg);
   str_split_char(&p_sess->http_get_arg, &p_sess->ftp_cmd_str, '.');
@@ -2052,3 +2056,4 @@ handle_http(struct vsf_session* p_sess)
   }
   vsf_sysutil_exit(0);
 }
+*/

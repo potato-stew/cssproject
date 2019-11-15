@@ -7,7 +7,26 @@ use std::os::raw::*;
 use bindings_new::*;
 
 extern "C" {
-pub fn resolve_tilde (p_str: &mystr, p_sess: &vsf_session);
+pub fn handle_stat   (p_sess: &mut vsf_session);
+pub fn handle_stat_file   (p_sess: &mut vsf_session);
+pub fn handle_logged_in_user   (p_sess: &mut vsf_session);
+pub fn handle_logged_in_pass   (p_sess: &mut vsf_session);
+pub fn handle_stou   (p_sess: &mut vsf_session);
+pub fn handle_eprt   (p_sess: &mut vsf_session);
+pub fn handle_mdtm   (p_sess: &mut vsf_session);
+pub fn handle_appe   (p_sess: &mut vsf_session);
+pub fn handle_site   (p_sess: &mut vsf_session);
+pub fn handle_nlst  (p_sess: &mut vsf_session);
+pub fn handle_rnto   (p_sess: &mut vsf_session);
+pub fn handle_rnfr   (p_sess: &mut vsf_session);
+pub fn handle_rest   (p_sess: &mut vsf_session);
+pub fn handle_dele   (p_sess: &mut vsf_session);
+pub fn handle_rmd   (p_sess: &mut vsf_session);
+pub fn handle_mkd   (p_sess: &mut vsf_session);
+pub fn handle_stor   (p_sess: &mut vsf_session);
+pub fn handle_port   (p_sess: &mut vsf_session);
+pub fn handle_type   (p_sess: &mut vsf_session);
+pub fn handle_help   (p_sess: &mut vsf_session);
 }
 
 pub fn default_mystr() -> mystr {
@@ -16,6 +35,151 @@ pub fn default_mystr() -> mystr {
 
 pub fn default_sockaddr() -> sockaddr {
   sockaddr { sa_family: 3, sa_data: [0; 14usize] }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn handle_http (p_sess: &mut vsf_session) {
+  // Warning: Doesn't respect cmds_allowed etc. because there is currently only
+  // one command (GET)!
+  // HTTP likely doesn't respect other important FTP options. I don't think
+  // logging works.
+
+  if 0 == tunable_download_enable
+   {
+    bug(str_to_const_char("HTTP needs download - fix your config"));
+   }
+
+  // Eat the HTTP headers, which we don't care about.
+  loop
+   {
+    vsf_cmdio_get_cmd_and_arg(p_sess, &p_sess.ftp_cmd_str,
+                              &p_sess.ftp_arg_str, 1);
+
+    if 0 == str_isempty(&p_sess.ftp_cmd_str) ||
+       0 == str_isempty(&p_sess.ftp_arg_str)
+      {
+       break;
+      }
+   }
+
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("HTTP/1.1 200 OK\r\n"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("Server: vsftpd\r\n"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("Connection: close\r\n"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("X-Frame-Options: SAMEORIGIN\r\n"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("X-Content-Type-Options: nosniff\r\n"));
+  // Split the path from the HTTP/1.x
+  str_split_char(&p_sess.http_get_arg, &p_sess.ftp_arg_str, ' ' as c_char);
+  str_copy(&p_sess.ftp_arg_str, &p_sess.http_get_arg);
+  str_split_char(&p_sess.http_get_arg, &p_sess.ftp_cmd_str, '.'  as c_char);
+  str_upper(&p_sess.ftp_cmd_str);
+  if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("HTML")) ||
+     0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("HTM" ))
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("Content-Type: text/html\r\n"));
+   }
+  else
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("Content-Type: dunno\r\n"));
+   }
+
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n"));
+  p_sess.is_ascii = 0;
+  p_sess.restart_pos = 0;
+  handle_retr(p_sess, 1);
+
+  if 0 != vsf_log_entry_pending(p_sess)
+   {
+    vsf_log_do_log(p_sess, 0);
+   }
+
+  vsf_sysutil_exit(0);
+ }
+
+
+#[no_mangle]
+pub unsafe extern "C" fn resolve_tilde (p_str: &mystr, p_sess: &vsf_session) {
+  let len : c_uint = str_getlen(p_str);
+  if len > 0 && str_get_char_at(p_str, 0) == '~' as c_char
+   {
+    let mut s_rhs_str = default_mystr();
+    if len == 1 || str_get_char_at(p_str, 1) == '/' as c_char
+     {
+      str_split_char(p_str, &s_rhs_str, '~' as c_char);
+      str_copy(p_str, &p_sess.home_str);
+      str_append_str(p_str, &s_rhs_str);
+     }
+    else if 0 != tunable_tilde_user_enable && len > 1
+     {
+      let mut s_user_str = default_mystr();
+      let p_user : *mut vsf_sysutil_user;
+
+      str_copy(&s_rhs_str, p_str);
+      str_split_char(&s_rhs_str, &s_user_str, '~' as c_char);
+      str_split_char(&s_user_str, &s_rhs_str, '/' as c_char);
+      p_user = str_getpwnam(&s_user_str);
+
+      if p_user != ptr::null_mut()
+       {
+        str_alloc_text(p_str, vsf_sysutil_user_get_homedir(p_user));
+        if 0 == str_isempty(&s_rhs_str)
+         {
+          str_append_char(p_str, '/' as c_char);
+          str_append_str(p_str, &s_rhs_str);
+         }
+       }
+     }
+   }
+ }
+
+#[no_mangle]
+pub unsafe extern "C" fn handle_sigurg (p_private: *mut c_void) {
+  let async_cmd_str = default_mystr();
+  let async_arg_str = default_mystr();
+  let real_cmd_str = default_mystr();
+
+  let mut len: c_uint;
+
+  let p_sess: *mut vsf_session = p_private as *mut _ as *mut vsf_session;
+//  let p_sess : &mut vsf_session = mem::transmute <*mut vsf_session,&mut vsf_session> (p_sess_temp);
+
+//  let p_sess: &mut vsf_session = mem::transmute <*c_void, &mut vsf_session> (p_private);
+  //struct vsf_session*  = (struct vsf_session*) p_private;
+
+  // Did stupid client sent something OOB without a data connection?
+  if (*p_sess).data_fd == -1
+   {
+    return;
+   }
+
+  // Get the async command - blocks (use data timeout alarm)
+  vsf_cmdio_get_cmd_and_arg(&(*p_sess), &async_cmd_str, &async_arg_str, 0);
+
+  // Chop off first four characters; they are telnet characters. The client
+  // should have sent the first two normally and the second two as urgent
+  // data.
+  len = str_getlen(&async_cmd_str);
+  if len >= 4
+   {
+    str_right(&async_cmd_str, &real_cmd_str, len - 4);
+   }
+
+  if 0 != str_equal_text(&real_cmd_str, str_to_const_char("ABOR"))
+   {
+    (*p_sess).abor_received = 1;
+    // This is failok because of a small race condition; the SIGURG might
+    // be raised after the data socket is closed, but before data_fd is
+    // set to -1.
+    vsf_sysutil_shutdown_failok((*p_sess).data_fd);
+   }
+  else
+   {
+    // Sorry!
+    vsf_cmdio_write(&(*p_sess), FTP_BADCMD, str_to_const_char("Unknown command."));
+   }
+
+  str_free(&async_cmd_str);
+  str_free(&async_arg_str);
+  str_free(&real_cmd_str);
 }
 
 #[no_mangle]
@@ -308,7 +472,6 @@ pub unsafe extern "C" fn check_abor (p_sess: &mut vsf_session) {
 
 }
 
-
 #[no_mangle]
 pub unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) {
   let mut s_mark_str:   mystr = default_mystr();// mystr { p_buf: ptr::null_mut(), alloc_bytes: 0, len: 0};
@@ -472,11 +635,410 @@ pub unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) 
     check_abor(p_sess);
    }
 
-  // port_pasv_cleanup_out:
-
   port_cleanup(p_sess);
   pasv_cleanup(p_sess);
   vsf_sysutil_close(opened_file);
 
 }
+
+/*
+#[no_mangle]
+pub unsafe extern "C" fn process_post_login (p_sess: &mut vsf_session) {
+  str_getcwd(&p_sess.home_str);
+
+  if 0 != p_sess.is_anonymous
+   {
+    vsf_sysutil_set_umask(tunable_anon_umask);
+    p_sess.bw_rate_max = tunable_anon_max_rate;
+   }
+  else
+   {
+    vsf_sysutil_set_umask(tunable_local_umask);
+    p_sess.bw_rate_max = tunable_local_max_rate;
+   }
+
+  if 0 != p_sess.is_http
+   {
+    handle_http(p_sess);
+    bug(str_to_const_char("should not be reached"));
+   }
+
+  // Don't support async ABOR if we have an SSL channel. The spec says SHOULD
+  // NOT, and I think there are synchronization issues between command and
+  // data reads.
+  if 0 != tunable_async_abor_enable && 0 == p_sess.control_use_ssl
+   {
+    vsf_sysutil_install_sighandler(EVSFSysUtilSignal_kVSFSysUtilSigURG, Some(handle_sigurg), p_sess as &mut _ as *mut c_void, 0);
+    vsf_sysutil_activate_sigurg(VSFTP_COMMAND_FD);
+   }
+
+  // Handle any login message
+  vsf_banner_dir_changed(p_sess, FTP_LOGINOK);
+  vsf_cmdio_write(p_sess, FTP_LOGINOK, str_to_const_char("Login successful."));
+
+  while true
+   {
+    let mut cmd_ok : c_int = 1;
+    if 0 != tunable_setproctitle_enable
+     {
+      vsf_sysutil_setproctitle(str_to_const_char("IDLE"));
+     }
+
+    // Blocks
+    vsf_cmdio_get_cmd_and_arg(p_sess, &p_sess.ftp_cmd_str,
+                              &p_sess.ftp_arg_str, 1);
+
+    if 0 != tunable_setproctitle_enable
+     {
+      let mut proctitle_str: mystr  = default_mystr();
+      str_copy(&proctitle_str, &p_sess.ftp_cmd_str);
+      if 0 == str_isempty(&p_sess.ftp_arg_str)
+       {
+        str_append_char(&proctitle_str, ' ' as c_char);
+        str_append_str(&proctitle_str, &p_sess.ftp_arg_str);
+       }
+
+      // Suggestion from Solar
+      str_replace_unprintable(&proctitle_str, '?' as c_char);
+      vsf_sysutil_setproctitle_str(&proctitle_str);
+      str_free(&proctitle_str);
+     }
+
+    // Test command against the allowed lists..
+    if ptr::null() != tunable_cmds_allowed
+     {
+      let mut s_src_str: mystr = default_mystr();
+      let mut s_rhs_str: mystr = default_mystr();
+      str_alloc_text(&s_src_str, tunable_cmds_allowed);
+
+      while true
+       {
+        str_split_char(&s_src_str, &s_rhs_str, ',' as c_char);
+
+        if 0 != str_isempty(&s_src_str)
+         {
+          cmd_ok = 0;
+          break;
+         }
+        else if 0 != str_equal(&s_src_str, &p_sess.ftp_cmd_str)
+         {
+          break;
+         }
+
+        str_copy(&s_src_str, &s_rhs_str);
+       }
+     }
+
+    if ptr::null() != tunable_cmds_denied
+     {
+      let mut s_src_str: mystr = default_mystr();
+      let mut s_rhs_str: mystr = default_mystr();
+      str_alloc_text(&s_src_str, tunable_cmds_denied);
+      while true
+       {
+        str_split_char(&s_src_str, &s_rhs_str, ',' as c_char);
+
+        if 0 != str_isempty(&s_src_str)
+         {
+          break;
+         }
+        else if 0 != str_equal(&s_src_str, &p_sess.ftp_cmd_str)
+         {
+          cmd_ok = 0;
+          break;
+         }
+
+        str_copy(&s_src_str, &s_rhs_str);
+       }
+     }
+
+    if 0 == cmd_ok
+     {
+      vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("QUIT"))
+     {
+      vsf_cmdio_write_exit(p_sess, FTP_GOODBYE, str_to_const_char("Goodbye."), 0);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PWD" )) ||
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XPWD"))
+     {
+      handle_pwd(p_sess);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("CWD" )) ||
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XCWD"))
+     {
+      handle_cwd(p_sess);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("CDUP")) ||
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XCUP"))
+     {
+      handle_cdup(p_sess);
+     }
+    else if 0 != tunable_pasv_enable &&
+            0 == p_sess.epsv_all &&
+             ( 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PASV")) ||
+               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("P@SW")) )
+     {
+      handle_pasv(p_sess, 0);
+     }
+    else if 0 != tunable_pasv_enable &&
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("EPSV"))
+     {
+      handle_pasv(p_sess, 1);
+     }
+    else if 0 != tunable_download_enable &&
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RETR"))
+     {
+      handle_retr(p_sess, 0);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("NOOP"))
+     {
+      vsf_cmdio_write(p_sess, FTP_NOOPOK, str_to_const_char("NOOP ok."));
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SYST"))
+     {
+      vsf_cmdio_write(p_sess, FTP_SYSTOK, str_to_const_char("UNIX Type: L8"));
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("HELP"))
+     {
+      handle_help(p_sess);
+     }
+    else if 0 != tunable_dirlist_enable &&
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("LIST"))
+     {
+      handle_list(p_sess);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("TYPE"))
+     {
+      handle_type(p_sess);
+     }
+    else if 0 != tunable_port_enable &&
+            0 == p_sess.epsv_all &&
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PORT"))
+     {
+      handle_port(p_sess);
+     }
+    else if 0 != tunable_write_enable &&
+             ( 0 != tunable_anon_upload_enable || 0 == p_sess.is_anonymous ) &&
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STOR"))
+     {
+      handle_stor(p_sess);
+     }
+    else if 0 != tunable_write_enable &&
+             ( 0 != tunable_anon_mkdir_write_enable || 0 == p_sess.is_anonymous ) &&
+             ( 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("MKD" )) ||
+               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XMKD")) )
+     {
+      handle_mkd(p_sess);
+     }
+    else if 0 != tunable_write_enable &&
+             ( 0 != tunable_anon_other_write_enable || 0 == p_sess.is_anonymous ) &&
+             ( 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RMD" )) ||
+               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XRMD")))
+     {
+      handle_rmd(p_sess);
+     }
+    else if 0 != tunable_write_enable &&
+             ( 0 != tunable_anon_other_write_enable || 0 == p_sess.is_anonymous ) &&
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("DELE"))
+     {
+      handle_dele(p_sess);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("REST"))
+     {
+      handle_rest(p_sess);
+     }
+    else if 0 != tunable_write_enable &&
+             ( 0 != tunable_anon_other_write_enable || 0 == p_sess.is_anonymous) &&
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RNFR"))
+     {
+      handle_rnfr(p_sess);
+     }
+    else if 0 != tunable_write_enable &&
+             ( 0 != tunable_anon_other_write_enable || 0 == p_sess.is_anonymous) &&
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RNTO"))
+     {
+      handle_rnto(p_sess);
+     }
+    else if 0 != tunable_dirlist_enable &&
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("NLST"))
+     {
+      handle_nlst(p_sess);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SIZE"))
+     {
+      handle_size(p_sess);
+     }
+    else if 0 == p_sess.is_anonymous &&
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SITE"))
+     {
+      handle_site(p_sess);
+     }
+    // Note - the weird ABOR string is checking for an async ABOR arriving
+    // without a SIGURG condition.
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ABOR")) ||
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("\377\364\377\362ABOR"))
+     {
+      vsf_cmdio_write(p_sess, FTP_ABOR_NOCONN, str_to_const_char("No transfer to ABOR."));
+     }
+    else if 0 != tunable_write_enable &&
+             ( 0 != tunable_anon_other_write_enable || 0 == p_sess.is_anonymous) &&
+               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("APPE"))
+     {
+      handle_appe(p_sess);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("MDTM"))
+     {
+      handle_mdtm(p_sess);
+     }
+    else if 0 != tunable_port_enable &&
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("EPRT"))
+     {
+      handle_eprt(p_sess);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STRU"))
+     {
+      str_upper(&p_sess.ftp_arg_str);
+      if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("F"))
+       {
+        vsf_cmdio_write(p_sess, FTP_STRUOK, str_to_const_char("Structure set to F."));
+       }
+      else
+       {
+        vsf_cmdio_write(p_sess, FTP_BADSTRU, str_to_const_char("Bad STRU command."));
+       }
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("MODE"))
+     {
+      str_upper(&p_sess.ftp_arg_str);
+      if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("S"))
+       {
+        vsf_cmdio_write(p_sess, FTP_MODEOK, str_to_const_char("Mode set to S."));
+       }
+      else
+       {
+        vsf_cmdio_write(p_sess, FTP_BADMODE, str_to_const_char("Bad MODE command."));
+       }
+     }
+    else if 0 != tunable_write_enable &&
+             ( 0 != tunable_anon_upload_enable || 0 == p_sess.is_anonymous ) &&
+               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STOU"))
+     {
+      handle_stou(p_sess);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ALLO"))
+     {
+      vsf_cmdio_write(p_sess, FTP_ALLOOK, str_to_const_char("ALLO command ignored."));
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("REIN"))
+     {
+      vsf_cmdio_write(p_sess, FTP_COMMANDNOTIMPL, str_to_const_char("REIN not implemented."));
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ACCT"))
+     {
+      vsf_cmdio_write(p_sess, FTP_COMMANDNOTIMPL, str_to_const_char("ACCT not implemented."));
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SMNT"))
+     {
+      vsf_cmdio_write(p_sess, FTP_COMMANDNOTIMPL, str_to_const_char("SMNT not implemented."));
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("FEAT"))
+     {
+      handle_feat(p_sess);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("OPTS"))
+     {
+      handle_opts(p_sess);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STAT")) &&
+            0 != str_isempty(&p_sess.ftp_arg_str)
+     {
+      handle_stat(p_sess);
+     }
+    else if 0 != tunable_dirlist_enable &&
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STAT"))
+     {
+      handle_stat_file(p_sess);
+     }
+    else if 0 != tunable_ssl_enable && 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PBSZ"))
+     {
+      handle_pbsz(p_sess);
+     }
+    else if 0 != tunable_ssl_enable && 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PROT"))
+     {
+      handle_prot(p_sess);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("USER"))
+     {
+      handle_logged_in_user(p_sess);
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PASS"))
+     {
+      handle_logged_in_pass(p_sess);
+     }
+    else if
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PASV")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PORT")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STOR")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("MKD")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XMKD")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RMD")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XRMD")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("DELE")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RNFR")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RNTO")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SITE")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("APPE")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("EPSV")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("EPRT")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RETR")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("LIST")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("NLST")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STOU")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ALLO")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("REIN")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ACCT")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SMNT")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("FEAT")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("OPTS")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STAT")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PBSZ")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PROT"))
+     {
+      vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+     }
+    else if 0 != str_isempty(&p_sess.ftp_cmd_str) &&
+            0 != str_isempty(&p_sess.ftp_arg_str)
+     {
+       // Deliberately ignore to avoid NAT device bugs. ProFTPd does the same.
+     }
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("GET")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("POST")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("HEAD")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("OPTIONS")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("CONNECT"))
+     {
+      vsf_cmdio_write_exit(p_sess, FTP_BADCMD,
+                           str_to_const_char("HTTP protocol commands not allowed."), 1);
+     }
+    else
+     {
+      vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Unknown command."));
+     }
+
+    if 0 != vsf_log_entry_pending(p_sess)
+     {
+      vsf_log_do_log(p_sess, 0);
+     }
+
+    if 0 != p_sess.data_timeout
+     {
+      vsf_cmdio_write_exit(p_sess, FTP_DATA_TIMEOUT,
+                           str_to_const_char("Data timeout. Reconnect. Sorry."), 1);
+     }
+
+  }
+}
+*/
 
