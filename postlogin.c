@@ -37,6 +37,7 @@
 //static void handle_cdup(struct vsf_session* p_sess);
 //static int port_active(struct vsf_session* p_sess);
 //static int pasv_active(struct vsf_session* p_sess);
+//static void handle_retr(struct vsf_session* p_sess, int is_http);
 
 extern void handle_pwd(struct vsf_session* p_sess);
 extern void handle_cwd(struct vsf_session* p_sess);
@@ -46,8 +47,8 @@ extern void port_cleanup(struct vsf_session* p_sess);
 extern void handle_cdup(struct vsf_session* p_sess);
 extern int port_active(struct vsf_session* p_sess);
 extern int pasv_active(struct vsf_session* p_sess);
+extern void handle_retr(struct vsf_session* p_sess, int is_http);
 
-static void handle_retr(struct vsf_session* p_sess, int is_http);
 static void handle_list(struct vsf_session* p_sess);
 static void handle_type(struct vsf_session* p_sess);
 static void handle_port(struct vsf_session* p_sess);
@@ -669,6 +670,7 @@ handle_pasv(struct vsf_session* p_sess, int is_epsv)
 }
 */
 
+/*
 static void
 handle_retr(struct vsf_session* p_sess, int is_http)
 {
@@ -705,38 +707,36 @@ handle_retr(struct vsf_session* p_sess, int is_http)
     vsf_cmdio_write(p_sess, FTP_FILEFAIL, "Failed to open file.");
     return;
   }
-  /* Lock file if required */
+  // Lock file if required
   if (tunable_lock_upload_files)
   {
     vsf_sysutil_lock_file_read(opened_file);
   }
   vsf_sysutil_fstat(opened_file, &s_p_statbuf);
-  /* No games please */
+  // No games please
   if (!vsf_sysutil_statbuf_is_regfile(s_p_statbuf))
   {
-    /* Note - pretend open failed */
+    // Note - pretend open failed
     vsf_cmdio_write(p_sess, FTP_FILEFAIL, "Failed to open file.");
-    /* Irritating FireFox does RETR on directories, so avoid logging this
-     * very common and noisy case.
-     */
+    // Irritating FireFox does RETR on directories, so avoid logging this
+    // very common and noisy case.
     if (vsf_sysutil_statbuf_is_dir(s_p_statbuf))
     {
       vsf_log_clear_entry(p_sess);
     }
     goto file_close_out;
   }
-  /* Now deactive O_NONBLOCK, otherwise we have a problem on DMAPI filesystems
-   * such as XFS DMAPI.
-   */
+  // Now deactive O_NONBLOCK, otherwise we have a problem on DMAPI filesystems
+  // such as XFS DMAPI.
   vsf_sysutil_deactivate_noblock(opened_file);
-  /* Optionally, we'll be paranoid and only serve publicly readable stuff */
+  // Optionally, we'll be paranoid and only serve publicly readable stuff
   if (p_sess->is_anonymous && tunable_anon_world_readable_only &&
       !vsf_sysutil_statbuf_is_readable_other(s_p_statbuf))
   {
     vsf_cmdio_write(p_sess, FTP_FILEFAIL, "Failed to open file.");
     goto file_close_out;
   }
-  /* Set the download offset (from REST) if any */
+  // Set the download offset (from REST) if any
   if (offset != 0)
   {
     vsf_sysutil_lseek_to(opened_file, offset);
@@ -778,7 +778,7 @@ handle_retr(struct vsf_session* p_sess, int is_http)
     trans_ret.retval = -2;
   }
   p_sess->transfer_size = trans_ret.transferred;
-  /* Log _after_ the blocking dispose call, so we get transfer times right */
+  // Log _after_ the blocking dispose call, so we get transfer times right
   if (trans_ret.retval == 0)
   {
     vsf_log_do_log(p_sess, 1);
@@ -787,9 +787,8 @@ handle_retr(struct vsf_session* p_sess, int is_http)
   {
     goto file_close_out;
   }
-  /* Emit status message _after_ blocking dispose call to avoid buggy FTP
-   * clients truncating the transfer.
-   */
+  // Emit status message _after_ blocking dispose call to avoid buggy FTP
+  // clients truncating the transfer.
   if (trans_ret.retval == -1)
   {
     vsf_cmdio_write(p_sess, FTP_BADSENDFILE, "Failure reading local file.");
@@ -813,6 +812,7 @@ port_pasv_cleanup_out:
 file_close_out:
   vsf_sysutil_close(opened_file);
 }
+*/
 
 static void
 handle_list(struct vsf_session* p_sess)
