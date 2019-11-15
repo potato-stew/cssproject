@@ -360,10 +360,12 @@ unsafe extern "C" fn vsf_sysutil_read_loop(fd: c_int, p_buf: *mut c_void, mut si
       /* Read all we're going to read.. */
       return num_read; 
     }
-    if retval > size.try_into().unwrap()
+    let retval: c_uint = retval.try_into().unwrap();
+    if retval > size
     {
       die(str_to_const_char("retval too big in vsf_sysutil_read_loop"));
     }
+    let retval: c_int = retval.try_into().unwrap();
     num_read += retval;
     let retval: c_uint = retval.try_into().unwrap();
     size = size - retval;
@@ -374,6 +376,55 @@ unsafe extern "C" fn vsf_sysutil_read_loop(fd: c_int, p_buf: *mut c_void, mut si
     }
   }
   return 1;
+}
+
+unsafe extern "C" fn vsf_sysutil_write_loop(fd: c_int, p_buf: *mut c_void, mut size: c_uint) -> c_int
+{
+  let mut retval: c_int;
+  let mut num_written: c_int = 0;
+  if size > WINT_MAX
+  {
+    die(str_to_const_char("size too big in vsf_sysutil_write_loop"));
+  }
+  while true
+  {
+    retval = vsf_sysutil_write(fd, p_buf.offset(num_written.try_into().unwrap()) as *mut _ as *mut c_void, size);
+    if retval < 0
+    {
+      /* Error */
+      return retval;
+    }
+    else if retval == 0
+    {
+      /* Written all we're going to write.. */
+      return num_written;
+    }
+    let retval: c_uint = retval.try_into().unwrap();
+    if retval > size
+    {
+      die(str_to_const_char("retval too big in vsf_sysutil_write_loop"));
+    }
+    let retval: c_int = retval.try_into().unwrap();
+    num_written += retval;
+    let retval: c_uint = retval.try_into().unwrap();
+    size = size - retval;
+    if (size == 0)
+    {
+      /* Hit the write target, cool. */
+      return num_written;
+    }
+  }
+  return 1;
+}
+
+unsafe extern "C" fn vsf_sysutil_get_file_offset(file_fd: c_int) -> filesize_t
+{
+  let mut retval: filesize_t = lseek(file_fd, 0, SEEK_CUR.try_into().unwrap());
+  if (retval < 0)
+  {
+    die(str_to_const_char("lseek"));
+  }
+  return retval;
 }
 
 
