@@ -3507,7 +3507,7 @@ assert_eq ! (:: std :: mem :: size_of :: < __fsid_t > ( ) , 8usize , concat ! ( 
  pub type u_int32_t = :: std :: os :: raw :: c_uint ;
  pub type u_int64_t = :: std :: os :: raw :: c_ulong ;
  pub type register_t = :: std :: os :: raw :: c_long ;
- # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct __sigset_t {
+ # [repr ( C )] # [derive ( Default, Debug , Copy , Clone )] pub struct __sigset_t {
 pub __val : [:: std :: os :: raw :: c_ulong ; 16usize] ,
 }
  # [test] fn bindgen_test_layout___sigset_t () {
@@ -5770,7 +5770,7 @@ pub fn vsf_sysutil_strdup (p_str : * const :: std :: os :: raw :: c_char) -> * m
 }
  extern "C" {
 //# [link_name = "\u{1}_Z18vsf_sysutil_memclrPvj"] 
-pub fn vsf_sysutil_memclr (p_dest : * mut :: std :: os :: raw :: c_void , size : :: std :: os :: raw :: c_uint) ;
+pub fn vsf_sysutil_memclr (p_dest : * mut :: std :: os :: raw :: c_void , s: usize) ;
 
 }
  extern "C" {
@@ -8691,12 +8691,18 @@ pub fn sigandset (__set : * mut sigset_t , __left : * const sigset_t , __right :
 pub fn sigorset (__set : * mut sigset_t , __left : * const sigset_t , __right : * const sigset_t) -> :: std :: os :: raw :: c_int ;
 
 }
- # [repr ( C )] # [derive ( Copy , Clone )] pub struct sigaction {
-pub __sigaction_handler : sigaction__bindgen_ty_1 , pub sa_mask : __sigset_t , pub sa_flags : :: std :: os :: raw :: c_int , pub sa_restorer : :: std :: option :: Option < unsafe extern "C" fn () > ,
+ # [repr ( C )] # [derive ( Default, Copy , Clone )] pub struct sigaction {
+  pub sa_handler : __sighandler_t ,
+   pub sa_sigaction : :: std :: option :: Option < unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int , arg2 : * mut siginfo_t , arg3 : * mut :: std :: os :: raw :: c_void) > ,
+   pub  _bindgen_union_align : u64 ,
+  //pub __sigaction_handler : sigaction__bindgen_ty_1 ,
+   pub sa_mask : __sigset_t , 
+   pub sa_flags : :: std :: os :: raw :: c_int ,
+    pub sa_restorer : :: std :: option :: Option < unsafe extern "C" fn () > ,
 }
- # [repr ( C )] # [derive ( Copy , Clone )] pub union sigaction__bindgen_ty_1 {
-pub sa_handler : __sighandler_t , pub sa_sigaction : :: std :: option :: Option < unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int , arg2 : * mut siginfo_t , arg3 : * mut :: std :: os :: raw :: c_void) > , _bindgen_union_align : u64 ,
-}
+ //# [repr ( C )] # [derive ( Copy , Clone )] pub union sigaction__bindgen_ty_1 {
+
+//}
  # [test] fn bindgen_test_layout_sigaction__bindgen_ty_1 () {
 assert_eq ! (:: std :: mem :: size_of :: < sigaction__bindgen_ty_1 > ( ) , 8usize , concat ! ( "Size of: " , stringify ! ( sigaction__bindgen_ty_1 ) )) ;
  assert_eq ! (:: std :: mem :: align_of :: < sigaction__bindgen_ty_1 > ( ) , 8usize , concat ! ( "Alignment of " , stringify ! ( sigaction__bindgen_ty_1 ) )) ;

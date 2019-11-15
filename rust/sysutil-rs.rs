@@ -12,10 +12,13 @@
 mod bindings_new;
 use bindings_new::*;
 use bindings_new::SIG_DFL;
+use std::mem;
+use std::os::raw::*;
 
 use std::os::raw::*;
 use std::ptr;
 use std::convert::*;
+use std::mem::size_of;
 
 /* File locals */
 unsafe extern "C" fn vsf_sysutil_alrm_sighandler(signum: c_int)
@@ -130,9 +133,6 @@ unsafe extern "C" fn vsf_sysutil_translate_sig(sig: EVSFSysUtilSignal) -> u32
   return realsig;
 }
 
-
-fn vsf_sysutil_set_sighandler(sig: c_uint, p_handlefunc: unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int) ){}
-
 unsafe extern "C" fn vsf_sysutil_install_sighandler(sig: EVSFSysUtilSignal,
                                 handler: vsf_sighandle_t,
                                 p_private:*mut c_void,
@@ -183,17 +183,9 @@ unsafe extern "C" fn vsf_sysutil_install_null_sighandler(sig: EVSFSysUtilSignal)
   vsf_sysutil_set_sighandler(realsig, vsf_sysutil_common_sighandler);
 }
 
-unsafe extern "C" fn vsf_sysutil_install_async_sighandler( sig: EVSFSysUtilSignal, handler: vsf_async_sighandle_t)
+unsafe extern "C" fn vsf_sysutil_install_async_sighandler( sig: EVSFSysUtilSignal, handler:vsf_async_sighandle_t)
 {
     let mut realsig: u32 = vsf_sysutil_translate_sig(sig);
-    //SIG_DFL has value 0 from signum-generic.h
-    SIG_DFL =  { Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(0))};
-    match SIG_DFL{
-      None=>{},
-      Some(x)=>{
-          vsf_sysutil_set_sighandler(realsig, x);
-      }
-    }
   s_sig_details[realsig as usize].p_private = ptr::null_mut();
   s_sig_details[realsig as usize].sync_sig_handler = Some( std::mem::transmute::<isize,
     unsafe extern "C" fn (arg1 :*mut :: std :: os :: raw :: c_void)>(0) );
@@ -204,5 +196,32 @@ unsafe extern "C" fn vsf_sysutil_install_async_sighandler( sig: EVSFSysUtilSigna
         vsf_sysutil_set_sighandler(realsig, x);
       }
   }
-  
+}
+
+unsafe extern "C" fn vsf_sysutil_set_sighandler(sig: c_uint, p_handlefunc: unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int) )
+{
+  let mut retval: c_int;
+  let mut sigact= sigaction:: default();
+  vsf_sysutil_memclr(&mut sigact as *mut _ as *mut c_void, size_of::<sigaction>());
+  sigact.sa_handler = Some(p_handlefunc);
+  retval = sigfillset(&mut sigact.sa_mask);
+  if retval != 0
+  {
+    die(str_to_const_char("sigfillset"));
+  }
+  retval = sigaction(sig.try_into().unwrap(), &sigact, ptr::null_mut());
+  if retval != 0
+  {
+    die(str_to_const_char("sigaction"));
+  }
+}
+
+unsafe fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
+{
+  /* Safety */
+  if (size == 0)
+  {
+    return;
+  }
+  memset(p_dest, 0, size);
 }
