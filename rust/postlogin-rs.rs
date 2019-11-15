@@ -7,8 +7,6 @@ use std::os::raw::*;
 use bindings_new::*;
 
 extern "C" {
-pub fn handle_stat   (p_sess: &mut vsf_session);
-pub fn handle_stat_file   (p_sess: &mut vsf_session);
 pub fn handle_logged_in_user   (p_sess: &mut vsf_session);
 pub fn handle_logged_in_pass   (p_sess: &mut vsf_session);
 pub fn handle_stou   (p_sess: &mut vsf_session);
@@ -27,6 +25,7 @@ pub fn handle_stor   (p_sess: &mut vsf_session);
 pub fn handle_port   (p_sess: &mut vsf_session);
 pub fn handle_type   (p_sess: &mut vsf_session);
 pub fn handle_help   (p_sess: &mut vsf_session);
+pub fn handle_dir_common (p_sess: &mut vsf_session,a: c_int,b: c_int);
 }
 
 pub fn default_mystr() -> mystr {
@@ -35,6 +34,86 @@ pub fn default_mystr() -> mystr {
 
 pub fn default_sockaddr() -> sockaddr {
   sockaddr { sa_family: 3, sa_data: [0; 14usize] }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn handle_stat (p_sess: &vsf_session) {
+  vsf_cmdio_write_hyphen(p_sess, FTP_STATOK, str_to_const_char("FTP server status:"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("     Connected to "));
+  vsf_cmdio_write_raw(p_sess, str_getbuf(&p_sess.remote_ip_str));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("     Logged in as "));
+  vsf_cmdio_write_raw(p_sess, str_getbuf(&p_sess.user_str));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("     TYPE: "));
+
+  if 0 != p_sess.is_ascii
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("ASCII\r\n"));
+   }
+  else
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("BINARY\r\n"));
+   }
+
+  if p_sess.bw_rate_max == 0
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     No session bandwidth limit\r\n"));
+   }
+  else
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Session bandwidth limit in byte/s is "));
+    vsf_cmdio_write_raw(p_sess, vsf_sysutil_ulong_to_str(p_sess.bw_rate_max.into()));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n"));
+   }
+
+  if tunable_idle_session_timeout == 0
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     No session timeout\r\n"));
+   }
+  else
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Session timeout in seconds is "));
+    vsf_cmdio_write_raw(p_sess,
+      vsf_sysutil_ulong_to_str(tunable_idle_session_timeout.into()));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n"));
+   }
+
+  if 0 != p_sess.control_use_ssl
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Control connection is encrypted\r\n")); 
+   }
+  else
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Control connection is plain text\r\n")); 
+   }
+
+  if 0 != p_sess.data_use_ssl
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Data connections will be encrypted\r\n")); 
+   }
+  else
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Data connections will be plain text\r\n"));
+   }
+
+  if p_sess.num_clients > 0
+   {
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     At session startup, client count was "));
+    vsf_cmdio_write_raw(p_sess, vsf_sysutil_ulong_to_str(p_sess.num_clients.into()));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n"));
+   }
+
+  vsf_cmdio_write_raw(p_sess,str_to_const_char("     vsFTPd "));
+//  str_to_const_char("     vsFTPd " VSF_VERSION " - secure, fast, stable\r\n"));
+//  VSF_VERSION " - secure, fast, stable\r\n"));
+//  str_to_const_char(" - secure, fast, stable\r\n"));
+  vsf_cmdio_write(p_sess, FTP_STATOK, str_to_const_char("End of status"));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn handle_stat_file (p_sess: &mut vsf_session) {
+  handle_dir_common(p_sess, 1, 1);
 }
 
 #[no_mangle]

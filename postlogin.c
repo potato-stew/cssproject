@@ -46,6 +46,8 @@
 //static void handle_sigurg(void* p_private);
 //static void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
 //static void handle_http(struct vsf_session* p_sess);
+//static void handle_stat(struct vsf_session* p_sess);
+//static void handle_stat_file(struct vsf_session* p_sess);
 
 extern void handle_pwd(struct vsf_session* p_sess);
 extern void handle_cwd(struct vsf_session* p_sess);
@@ -64,6 +66,8 @@ extern void check_abor(struct vsf_session* p_sess);
 extern void handle_sigurg(void* p_private);
 extern void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
 extern void handle_http(struct vsf_session* p_sess);
+extern void handle_stat(struct vsf_session* p_sess);
+extern void handle_stat_file(struct vsf_session* p_sess);
 
 
 static void handle_list(struct vsf_session* p_sess);
@@ -88,12 +92,11 @@ static void handle_site_umask(struct vsf_session* p_sess,
 static void handle_eprt(struct vsf_session* p_sess);
 static void handle_help(struct vsf_session* p_sess);
 static void handle_stou(struct vsf_session* p_sess);
-static void handle_stat(struct vsf_session* p_sess);
-static void handle_stat_file(struct vsf_session* p_sess);
 static void handle_logged_in_user(struct vsf_session* p_sess);
 static void handle_logged_in_pass(struct vsf_session* p_sess);
 
-static void handle_dir_common(struct vsf_session* p_sess, int full_details,
+//static
+void handle_dir_common(struct vsf_session* p_sess, int full_details,
                               int stat_cmd);
 static void handle_upload_common(struct vsf_session* p_sess, int is_append,
                                  int is_unique);
@@ -828,7 +831,8 @@ handle_list(struct vsf_session* p_sess)
   handle_dir_common(p_sess, 1, 0);
 }
 
-static void
+//static
+void
 handle_dir_common(struct vsf_session* p_sess, int full_details, int stat_cmd)
 {
   static struct mystr s_option_str;
@@ -1856,6 +1860,7 @@ get_unique_filename(struct mystr* p_outstr, const struct mystr* p_base_str)
   }
 }
 
+/*
 static void
 handle_stat(struct vsf_session* p_sess)
 {
@@ -1928,7 +1933,7 @@ handle_stat_file(struct vsf_session* p_sess)
 {
   handle_dir_common(p_sess, 1, 1);
 }
-
+*/
 /*
 static int
 data_transfer_checks_ok(struct vsf_session* p_sess)
