@@ -5726,8 +5726,9 @@ pub fn vsf_sysutil_fork_failok () -> :: std :: os :: raw :: c_int ;
 pub fn vsf_sysutil_exit (exit_code : :: std :: os :: raw :: c_int) ;
 
 }
- # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct vsf_sysutil_wait_retval {
-pub PRIVATE_HANDS_OFF_syscall_retval : :: std :: os :: raw :: c_int , pub PRIVATE_HANDS_OFF_exit_status : :: std :: os :: raw :: c_int ,
+ # [repr ( C )] # [derive ( Default, Debug , Copy , Clone )] pub struct vsf_sysutil_wait_retval {
+pub PRIVATE_HANDS_OFF_syscall_retval : :: std :: os :: raw :: c_int , 
+pub PRIVATE_HANDS_OFF_exit_status : :: std :: os :: raw :: c_int ,
 }
  # [test] fn bindgen_test_layout_vsf_sysutil_wait_retval () {
 assert_eq ! (:: std :: mem :: size_of :: < vsf_sysutil_wait_retval > ( ) , 8usize , concat ! ( "Size of: " , stringify ! ( vsf_sysutil_wait_retval ) )) ;
@@ -13226,7 +13227,7 @@ pub static mut s_current_umask : :: std :: os :: raw :: c_uint ;
 pub static mut s_current_time : timeval ;
 
 }
- pub const s_current_pid : :: std :: os :: raw :: c_int = - 1 ;
+ pub static mut s_current_pid : :: std :: os :: raw :: c_int = - 1 ;
  extern "C" {
 //# [link_name = "\u{1}_ZL11s_exit_func"] 
 pub static mut s_exit_func : exitfunc_t ;

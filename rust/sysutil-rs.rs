@@ -492,6 +492,78 @@ unsafe extern "C" fn vsf_sysutil_free( p_ptr: *mut c_void)
   free(p_ptr);
 }
 
+unsafe extern "C" fn vsf_sysutil_getpid() -> c_uint
+{
+  if s_current_pid == -1
+  {
+    s_current_pid = vsf_sysutil_getpid_nocache();
+  }
+
+  return s_current_pid.try_into().unwrap();
+}
+
+unsafe extern "C" fn vsf_sysutil_fork() -> c_int
+{
+  let mut retval: c_int = vsf_sysutil_fork_failok();
+  if retval < 0
+  {
+    die(str_to_const_char("fork"));
+  }
+  return retval;
+}
+
+unsafe extern "C" fn vsf_sysutil_fork_failok() -> c_int
+{
+  let mut retval: c_int = vsf_sysutil_fork_failok();
+  retval = fork();
+  if retval == 0
+  {
+    vsf_sysutil_post_fork();
+  }
+  return retval;
+}
+
+unsafe extern  "C" fn vsf_sysutil_set_exit_func(exitfunc: exitfunc_t)
+{
+  s_exit_func = exitfunc;
+}
+
+unsafe extern "C" fn vsf_sysutil_exit(exit_code: c_int)
+{
+  match s_exit_func 
+  {
+    None=>{},
+    Some(x)=>{
+      let curr_func: exitfunc_t = s_exit_func;
+      /* Prevent recursion */
+      s_exit_func = None;
+      curr_func;
+    }
+  }
+  _exit(exit_code);
+
+}
+
+unsafe extern "C" fn vsf_sysutil_wait() -> vsf_sysutil_wait_retval
+{
+  let mut retval= vsf_sysutil_wait_retval::default();
+//  vsf_sysutil_memclr(&mut retval as *mut c_void, size_of::<vsf_sysutil_wait_retval>());
+  vsf_sysutil_memclr(&mut retval as *mut _ as *mut c_void, size_of::<vsf_sysutil_wait_retval>());
+  while true
+  {
+    let sys_ret: c_int = wait(&mut retval.PRIVATE_HANDS_OFF_exit_status as *mut _ as *mut c_int);
+    //call __errno_location funciton
+    if sys_ret < 0 && *__errno_location() == EINTR.try_into().unwrap()
+    {
+      vsf_sysutil_check_pending_actions(EVSFSysUtilInterruptContext_kVSFSysUtilUnknown, 0, 0);
+      continue;
+    }
+    retval.PRIVATE_HANDS_OFF_syscall_retval = sys_ret;
+    return retval;
+  }
+  return retval;
+}
+
 
 
 unsafe fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
