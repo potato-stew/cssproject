@@ -239,6 +239,88 @@ unsafe extern "C" fn vsf_sysutil_block_sig(sig: EVSFSysUtilSignal)
   }
 }
 
+unsafe extern "C" fn vsf_sysutil_unblock_sig(sig: EVSFSysUtilSignal)
+{
+  //sigset_t is a struct
+  let mut sset= sigset_t :: default();
+  let mut retval : c_int;
+  let mut realsig: c_int = vsf_sysutil_translate_sig(sig).try_into().unwrap();
+  retval = sigemptyset(&mut sset);
+  if retval != 0
+  {
+    die(str_to_const_char("sigemptyset"));
+  }
+  retval = sigaddset(&mut sset, realsig);
+  if retval != 0
+  {
+    die(str_to_const_char("sigaddset"));
+  }
+  retval = sigprocmask(SIG_UNBLOCK.try_into().unwrap(), & sset, ptr::null_mut());
+  if retval != 0
+  {
+    die(str_to_const_char("sigprocmask"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_install_io_handler(handler: vsf_context_io_t , p_private:*mut c_void)
+{
+  match s_io_handler
+  {
+    None=> {},
+    Some(x)=>{
+      bug(str_to_const_char("double register of i/o handler"));
+    }
+  }
+  s_io_handler = handler;
+  s_p_io_handler_private = p_private;
+}
+
+unsafe extern "C" fn vsf_sysutil_uninstall_io_handler()
+{
+  match s_io_handler
+  {
+    None=> {},
+    Some(x)=>{
+    bug(str_to_const_char("no i/o handler to unregister!"));
+  }
+}
+  s_io_handler = None;
+  s_p_io_handler_private = ptr::null_mut();
+}
+
+fn vsf_sysutil_set_alarm(trigger_seconds: c_uint)
+{
+  //call to unistd.h
+  unsafe{
+   alarm(trigger_seconds);
+  }
+}
+
+fn vsf_sysutil_clear_alarm()
+{
+  //call to unistd.h
+  unsafe{
+    vsf_sysutil_set_alarm(0);
+  }
+}
+
+fn vsf_sysutil_read(fd: c_int, p_buf: *mut c_void, size: c_uint) -> c_int
+{
+  while true
+  {
+    //call to unistd.h
+    let mut retval: c_int = read(fd, p_buf, size.try_into().unwrap()).try_into().unwrap();
+    let mut saved_errno: c_int = errno;
+    vsf_sysutil_check_pending_actions(EVSFSysUtilInterruptContext_kVSFSysUtilIO, retval, fd);
+    if retval < 0 && saved_errno == EINTR.try_into().unwrap()
+    {
+      continue;
+    }
+    return retval;
+  }
+
+  return -1;
+}
 
 unsafe fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
 {
