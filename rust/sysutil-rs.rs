@@ -142,11 +142,11 @@ unsafe extern "C" fn vsf_sysutil_install_sighandler(sig: EVSFSysUtilSignal,
   s_sig_details[realsig as usize].p_private = p_private;
   s_sig_details[realsig as usize].sync_sig_handler = handler;
   s_sig_details[realsig as usize].use_alarm = use_alarm;
-  vsf_sysutil_set_sighandler(realsig, vsf_sysutil_common_sighandler);
+  vsf_sysutil_set_sighandler(realsig, Some(vsf_sysutil_common_sighandler) );
   
   if use_alarm != 0 && realsig != SIGALRM
   {
-    vsf_sysutil_set_sighandler(SIGALRM, vsf_sysutil_alrm_sighandler);
+    vsf_sysutil_set_sighandler(SIGALRM, Some(vsf_sysutil_alrm_sighandler) );
   }
 }
 
@@ -154,10 +154,17 @@ unsafe extern "C" fn vsf_sysutil_default_sig(sig: EVSFSysUtilSignal)
 {
   let mut realsig: u32 = vsf_sysutil_translate_sig(sig);
   //SIG_DFL has value 0 from signum-generic.h
+<<<<<<< HEAD
   SIG_DFL =  None;
   vsf_sysutil_set_sighandler(realsig, SIG_DFL);
   s_sig_details[realsig as usize].p_private = ptr::null_mut();
   s_sig_details[realsig as usize].sync_sig_handler = None;
+=======
+  SIG_DFL =  None;//{ Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(0))};
+  vsf_sysutil_set_sighandler(realsig, SIG_DFL);
+  s_sig_details[realsig as usize].p_private = ptr::null_mut();
+  s_sig_details[realsig as usize].sync_sig_handler = None; //Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 :*mut :: std :: os :: raw :: c_void)>(0) );
+>>>>>>> 6f4c25f330b361ae93fc988c3f9c7ee8b127fb67
 }
 
 unsafe extern "C" fn vsf_sysutil_install_null_sighandler(sig: EVSFSysUtilSignal)
@@ -171,26 +178,21 @@ unsafe extern "C" fn vsf_sysutil_install_null_sighandler(sig: EVSFSysUtilSignal)
   vsf_sysutil_set_sighandler(realsig, Some(vsf_sysutil_common_sighandler) );
 }
 
-unsafe extern "C" fn vsf_sysutil_install_async_sighandler ( sig: EVSFSysUtilSignal, handler:vsf_async_sighandle_t) {
+unsafe extern "C" fn vsf_sysutil_install_async_sighandler ( sig: EVSFSysUtilSignal, handler: vsf_async_sighandle_t) {
 
   let mut realsig: u32 = vsf_sysutil_translate_sig(sig);
   s_sig_details[realsig as usize].p_private = ptr::null_mut();
   s_sig_details[realsig as usize].sync_sig_handler = None;
   vsf_sysutil_block_sig(sig);
-  match handler{
-      None=>{},
-      Some(x)=>{
-        vsf_sysutil_set_sighandler(realsig, x);
-      }
-  }
+  vsf_sysutil_set_sighandler(realsig, handler);
 }
 
-unsafe extern "C" fn vsf_sysutil_set_sighandler(sig: c_uint, p_handlefunc: unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int) )
+unsafe extern "C" fn vsf_sysutil_set_sighandler(sig: c_uint, p_handlefunc: Option <unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)> )
 {
   let mut retval: c_int;
   let mut sigact= sigaction:: default();
   vsf_sysutil_memclr(&mut sigact as *mut _ as *mut c_void, size_of::<sigaction>());
-  sigact.sa_handler = Some(p_handlefunc);
+  sigact.sa_handler = p_handlefunc;
   retval = sigfillset(&mut sigact.sa_mask);
   if retval != 0
   {
