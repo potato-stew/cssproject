@@ -183,12 +183,11 @@ unsafe extern "C" fn vsf_sysutil_install_null_sighandler(sig: EVSFSysUtilSignal)
   vsf_sysutil_set_sighandler(realsig, vsf_sysutil_common_sighandler);
 }
 
-unsafe extern "C" fn vsf_sysutil_install_async_sighandler( sig: EVSFSysUtilSignal, handler:vsf_async_sighandle_t)
-{
-    let mut realsig: u32 = vsf_sysutil_translate_sig(sig);
+unsafe extern "C" fn vsf_sysutil_install_async_sighandler ( sig: EVSFSysUtilSignal, handler:vsf_async_sighandle_t) {
+
+  let mut realsig: u32 = vsf_sysutil_translate_sig(sig);
   s_sig_details[realsig as usize].p_private = ptr::null_mut();
-  s_sig_details[realsig as usize].sync_sig_handler = Some( std::mem::transmute::<isize,
-    unsafe extern "C" fn (arg1 :*mut :: std :: os :: raw :: c_void)>(0) );
+  s_sig_details[realsig as usize].sync_sig_handler = None;
   vsf_sysutil_block_sig(sig);
   match handler{
       None=>{},
