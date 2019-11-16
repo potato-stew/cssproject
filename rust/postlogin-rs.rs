@@ -37,6 +37,11 @@ pub fn default_sockaddr() -> sockaddr {
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn handle_list (p_sess: &mut vsf_session) {
+  handle_dir_common(p_sess, 1, 0);
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn handle_stat (p_sess: &vsf_session) {
   vsf_cmdio_write_hyphen(p_sess, FTP_STATOK, str_to_const_char("FTP server status:"));
   vsf_cmdio_write_raw(p_sess, str_to_const_char("     Connected to "));
@@ -105,6 +110,8 @@ pub unsafe extern "C" fn handle_stat (p_sess: &vsf_session) {
    }
 
   vsf_cmdio_write_raw(p_sess,str_to_const_char("     vsFTPd "));
+  vsf_cmdio_write_raw(p_sess,str_to_const_char(VSF_VERSION));
+  vsf_cmdio_write_raw(p_sess,str_to_const_char(" - secure, fast, stable\r\n"));
 //  str_to_const_char("     vsFTPd " VSF_VERSION " - secure, fast, stable\r\n"));
 //  VSF_VERSION " - secure, fast, stable\r\n"));
 //  str_to_const_char(" - secure, fast, stable\r\n"));

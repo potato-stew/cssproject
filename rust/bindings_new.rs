@@ -603,7 +603,8 @@ Self :: new ()
  pub const VSF_SECUTIL_OPTION_NO_FDS : u32 = 8 ;
  pub const VSF_SECUTIL_OPTION_NO_PROCS : u32 = 16 ;
  pub const VSF_SECUTIL_OPTION_ALLOW_WRITEABLE_ROOT : u32 = 32 ;
- pub const VSF_VERSION : & 'static [u8 ; 6usize] = b"3.0.3\0" ;
+// pub const VSF_VERSION : & 'static [u8 ; 6usize] = b"3.0.3\0" ;
+ pub const VSF_VERSION : &str  = "3.0.3";
  pub const VSFTP_MAX_VISIT_REMEMBER : u32 = 100 ;
  pub const VSFTP_MAX_MSGFILE_SIZE : u32 = 4000 ;
  pub const _NETINET_IN_SYSTM_H : u32 = 1 ;

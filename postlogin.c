@@ -48,6 +48,7 @@
 //static void handle_http(struct vsf_session* p_sess);
 //static void handle_stat(struct vsf_session* p_sess);
 //static void handle_stat_file(struct vsf_session* p_sess);
+//static void handle_list(struct vsf_session* p_sess);
 
 extern void handle_pwd(struct vsf_session* p_sess);
 extern void handle_cwd(struct vsf_session* p_sess);
@@ -68,9 +69,9 @@ extern void resolve_tilde(struct mystr* p_str, struct vsf_session* p_sess);
 extern void handle_http(struct vsf_session* p_sess);
 extern void handle_stat(struct vsf_session* p_sess);
 extern void handle_stat_file(struct vsf_session* p_sess);
+extern void handle_list(struct vsf_session* p_sess);
 
 
-static void handle_list(struct vsf_session* p_sess);
 static void handle_type(struct vsf_session* p_sess);
 static void handle_port(struct vsf_session* p_sess);
 static void handle_stor(struct vsf_session* p_sess);
@@ -825,11 +826,13 @@ file_close_out:
 }
 */
 
+/*
 static void
 handle_list(struct vsf_session* p_sess)
 {
   handle_dir_common(p_sess, 1, 0);
 }
+*/
 
 //static
 void

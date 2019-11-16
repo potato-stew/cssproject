@@ -154,17 +154,10 @@ unsafe extern "C" fn vsf_sysutil_default_sig(sig: EVSFSysUtilSignal)
 {
   let mut realsig: u32 = vsf_sysutil_translate_sig(sig);
   //SIG_DFL has value 0 from signum-generic.h
-<<<<<<< HEAD
   SIG_DFL =  None;
   vsf_sysutil_set_sighandler(realsig, SIG_DFL);
   s_sig_details[realsig as usize].p_private = ptr::null_mut();
   s_sig_details[realsig as usize].sync_sig_handler = None;
-=======
-  SIG_DFL =  None;//{ Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(0))};
-  vsf_sysutil_set_sighandler(realsig, SIG_DFL);
-  s_sig_details[realsig as usize].p_private = ptr::null_mut();
-  s_sig_details[realsig as usize].sync_sig_handler = None; //Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 :*mut :: std :: os :: raw :: c_void)>(0) );
->>>>>>> 6f4c25f330b361ae93fc988c3f9c7ee8b127fb67
 }
 
 unsafe extern "C" fn vsf_sysutil_install_null_sighandler(sig: EVSFSysUtilSignal)
