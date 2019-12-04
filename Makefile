@@ -12,7 +12,7 @@ LIBS	=	`./vsf_findlibs.sh`
 LINK	=	-Wl,-s
 LDFLAGS	=	-fPIE -pie -Wl,-z,relro -Wl,-z,now
 
-OBJS	=	main.o utility.o prelogin.o ftpcmdio.o postlogin.o privsock.o \
+OBJS	=	main.o utility.o prelogin.o ftpcmdio.o privsock.o \
 		tunables.o ftpdataio.o secbuf.o ls.o \
 		postprivparent.o logging.o str.o netstr.o sysstr.o strlist.o \
     banner.o filestr.o parseconf.o secutil.o \
@@ -22,7 +22,7 @@ OBJS	=	main.o utility.o prelogin.o ftpcmdio.o postlogin.o privsock.o \
     seccompsandbox.o
 
 RUSTC = rustc
-RUST_FLAGS = --crate-type=staticlib --emit=obj -C panic=abort
+RUST_FLAGS = --crate-type=staticlib --emit=obj -C panic=abort -O#-C opt-level=3
 
 RUST_OBJS = opts.o postlogin-rs.o sysutil-rs.o
 RUST_STDLIB_PATH =  $$RUST_STDLIB #/home/navdeep/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-fae576517123aa4e.so
