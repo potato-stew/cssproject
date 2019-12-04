@@ -164,8 +164,8 @@ unsafe extern "C" fn vsf_sysutil_install_null_sighandler(sig: EVSFSysUtilSignal)
 {
   let mut realsig: u32 = vsf_sysutil_translate_sig(sig);
   //SIG_DFL has value 0 from signum-generic.h
-  SIG_DFL = None;// { Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(0))};
-  vsf_sysutil_set_sighandler(realsig, SIG_DFL);
+  //SIG_DFL = None;// { Some( std::mem::transmute::<isize,unsafe extern "C" fn (arg1 : :: std :: os :: raw :: c_int)>(0))};
+  //vsf_sysutil_set_sighandler(realsig, SIG_DFL);
   s_sig_details[realsig as usize].p_private = ptr::null_mut();
   s_sig_details[realsig as usize].sync_sig_handler = None;// Some( std::mem::transmute::<isize, unsafe extern "C" fn (arg1 :*mut :: std :: os :: raw :: c_void)>(0) );
   vsf_sysutil_set_sighandler(realsig, Some(vsf_sysutil_common_sighandler) );
@@ -546,6 +546,21 @@ unsafe extern "C" fn vsf_sysutil_wait() -> vsf_sysutil_wait_retval
   return retval;
 }
 
+unsafe extern "C" fn vsf_sysutil_wait_reap_one() -> c_int
+{
+  let mut retval : c_int = waitpid(-1, ptr::null_mut(), WNOHANG.try_into().unwrap());
+  if retval == 0 || (retval < 0 && *__errno_location() == ECHILD.try_into().unwrap())
+  {
+    /* No more children */
+    return 0;
+  }
+  if (retval < 0)
+  {
+    die(str_to_const_char("waitpid"));
+  }
+  /* Got one */
+  return retval;
+}
 
 
 unsafe fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
