@@ -584,12 +584,335 @@ let mut status: c_int;
   return WEXITSTATUS(status);
 }
 
+unsafe extern "C" fn vsf_sysutil_activate_keepalive(fd: c_int)
+{
+  let mut keepalive: c_int = 1;
+  let mut retval: c_int = setsockopt(fd, SOL_SOCKET.try_into().unwrap(), SO_KEEPALIVE.try_into().unwrap(), &keepalive as & _ as *const _ as *const c_void, size_of::<c_int>().try_into().unwrap());
+  
+  if retval != 0
+  {
+    die(str_to_const_char("setsockopt: keepalive"));
+  }
+}
 
+
+unsafe extern "C" fn vsf_sysutil_activate_reuseaddr(fd: c_int)
+{
+  let mut reuseaddr:c_int = 1;
+  let mut retval: c_int = setsockopt(fd, SOL_SOCKET.try_into().unwrap(), SO_REUSEADDR.try_into().unwrap(), &reuseaddr as & _ as *const _ as *const c_void,
+                          size_of::<c_int>().try_into().unwrap());
+  if retval != 0
+  {
+    die(str_to_const_char("setsockopt: reuseaddr"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_set_nodelay(fd: c_int)
+{
+  let mut nodelay :c_int = 1;
+  let mut retval:c_int = setsockopt(fd, IPPROTO_TCP.try_into().unwrap(), TCP_NODELAY.try_into().unwrap(), &nodelay as & _ as *const _ as *const c_void,
+                          size_of::<c_int>().try_into().unwrap());
+  if (retval != 0)
+  {
+    die(str_to_const_char("setsockopt: nodelay"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_activate_sigurg(fd: c_int)
+{
+  let mut retval: c_int = fcntl(fd, F_SETOWN.try_into().unwrap(), vsf_sysutil_getpid());
+  if retval != 0
+  {
+    die(str_to_const_char("fcntl"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_activate_oobinline(fd: c_int)
+{
+  let mut oob_inline:c_int = 1;
+  let mut retval:c_int = setsockopt(fd, SOL_SOCKET.try_into().unwrap(), SO_OOBINLINE.try_into().unwrap(), &oob_inline as & _ as *const _ as *const c_void,
+                          size_of::<c_int>().try_into().unwrap());
+  if retval != 0
+  {
+    die(str_to_const_char("setsockopt: oobinline"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_set_iptos_throughput(fd: c_int)
+{
+  let mut tos: c_int = IPTOS_THROUGHPUT.try_into().unwrap();
+  /* Ignore failure to set (maybe this IP stack demands privilege for this) */
+  setsockopt(fd, IPPROTO_IP.try_into().unwrap(), IP_TOS.try_into().unwrap(), &tos as & _ as *const _ as *const c_void, size_of::<c_int>().try_into().unwrap());
+}
+
+unsafe  extern "C" fn vsf_sysutil_activate_linger(fd: c_int)
+{
+  let mut retval: c_int;
+  let mut the_linger = linger::default();
+  vsf_sysutil_memclr(&mut the_linger as *mut _ as *mut c_void, size_of::<linger>());
+  the_linger.l_onoff = 1;
+  the_linger.l_linger = 60 * 10;
+  retval = setsockopt(fd, SOL_SOCKET.try_into().unwrap(), SO_LINGER.try_into().unwrap(), &the_linger as & _ as *const _ as *const c_void,
+                      size_of::<linger>().try_into().unwrap());
+  if retval != 0
+  {
+    die(str_to_const_char("setsockopt: linger"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_deactivate_linger_failok(fd: c_int)
+{
+  let mut the_linger = linger::default();
+  the_linger.l_onoff = 0;
+  the_linger.l_linger = 0;
+  setsockopt(fd, SOL_SOCKET.try_into().unwrap(), SO_LINGER.try_into().unwrap(), &the_linger as & _ as *const _ as *const c_void, size_of::<linger>().try_into().unwrap());
+}
+
+unsafe extern "C" fn vsf_sysutil_activate_noblock(fd: c_int)
+{
+  let mut retval: c_int;
+  let mut curr_flags: c_int = fcntl(fd, F_GETFL.try_into().unwrap());
+  if vsf_sysutil_retval_is_error(curr_flags) != 0
+  {
+    die(str_to_const_char("fcntl"));
+  }
+  curr_flags = curr_flags | O_NONBLOCK;
+  retval = fcntl(fd, F_SETFL.try_into().unwrap(), curr_flags);
+  if retval != 0
+  {
+    die(str_to_const_char("fcntl"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_deactivate_noblock(fd: c_int)
+{
+  let mut retval: c_int;
+  let mut curr_flags: c_int = fcntl(fd, F_GETFL.try_into().unwrap());
+  if vsf_sysutil_retval_is_error(curr_flags) != 0
+  {
+    die(str_to_const_char("fcntl"));
+  }
+  curr_flags &= !O_NONBLOCK;
+  retval = fcntl(fd, F_SETFL.try_into().unwrap(), curr_flags);
+  if retval != 0
+  {
+    die(str_to_const_char("fcntl"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_recv_peek(fd: c_int, p_buf: *mut c_void, len:c_uint)-> c_int
+{
+  while true
+  {
+    let mut retval: c_int = recv(fd, p_buf, len.try_into().unwrap(), MSG_PEEK.try_into().unwrap()).try_into().unwrap();
+    let saved_errno:c_int = (*__errno_location ());
+    vsf_sysutil_check_pending_actions(EVSFSysUtilInterruptContext_kVSFSysUtilIO, retval, fd);
+    if retval < 0 && saved_errno == EINTR.try_into().unwrap()
+    {
+      continue;
+    }
+    return retval;
+  }
+  return -1;
+}
+
+unsafe extern "C" fn vsf_sysutil_atoi(p_str: *const c_char) -> c_int
+{
+  return atoi(p_str);
+}
+
+unsafe extern "C" fn vsf_sysutil_a_to_filesize_t(p_str: *const c_char) -> filesize_t
+{
+  /* atoll() is C99 standard - but even modern FreeBSD, OpenBSD don't have
+   * it, so we'll supply our own
+   */
+  let mut result: filesize_t = 0;
+  let mut mult: filesize_t = 1;
+  let mut len: c_uint = vsf_sysutil_strlen(p_str);
+  let mut i: c_uint;
+  /* Bail if the number is excessively big (petabytes!) */
+  if len > 15
+  {
+    return 0;
+  }
+  for i in 0..len
+  {
+    let mut the_char: c_char = *p_str.offset((len-(i+1)).try_into().unwrap());
+    let mut val: filesize_t;
+    if the_char < '0' as c_char || the_char > '9' as c_char
+    {
+      return 0;
+    }
+    val = (the_char - '0' as c_char).into();
+    val *= mult;
+    result += val;
+    mult *= 10;
+  }
+  return result;
+}
+
+unsafe extern "C" fn vsf_sysutil_ulong_to_str(the_ulong: c_ulong) -> *const c_char
+{
+  let mut ulong_buf: [c_char; 32]=[0;32];
+  snprintf(&mut ulong_buf[0], 32, str_to_const_char("%lu"), the_ulong);
+  return &ulong_buf[0];
+}
+
+unsafe extern "C" fn vsf_sysutil_filesize_t_to_str(the_filesize: filesize_t ) -> *const c_char
+{
+  let mut filesize_buf: [c_char; 32]=[0;32];
+  if (size_of::<c_long>() == 8)
+  {
+    /* Avoid using non-standard %ll if we can */
+    snprintf(&mut filesize_buf[0], 32, str_to_const_char( "%ld"),
+                    the_filesize as c_long);
+  }
+  else
+  {
+    snprintf(&mut filesize_buf[0], 32, str_to_const_char("%lld"), the_filesize);
+  }
+  return &filesize_buf[0];
+}
+
+unsafe extern "C" fn vsf_sysutil_double_to_str(the_double: c_double) -> *const c_char
+{
+  let mut double_buf: [c_char; 32]=[0;32];
+  snprintf(&mut double_buf[0], 32, str_to_const_char("%.2f"), the_double);
+  return &double_buf[0];
+}
+
+unsafe extern "C" fn vsf_sysutil_uint_to_octal(the_uint: c_uint)-> *const c_char
+{
+  let mut octal_buf:[c_char; 32]=[0;32];
+  if the_uint == 0
+  {
+    octal_buf[0] = '0' as c_char;
+    octal_buf[1] = '\0' as c_char;
+  }
+  else
+  {
+    snprintf(&mut octal_buf[0], 32, str_to_const_char("0%o"), the_uint);
+  }
+  return &octal_buf[0];
+}
+
+unsafe extern "C" fn vsf_sysutil_octal_to_uint(mut p_str: *mut c_char) -> c_uint
+{
+  /* NOTE - avoiding using sscanf() parser */
+  let mut result:c_uint = 0;
+  let mut seen_non_zero_digit:c_int = 0;
+  while (*p_str != '\0' as c_char)
+  {
+    let digit: c_int = (*p_str).into();
+    if isdigit(digit)!= 0 || digit > ('7' as c_char).into()
+    {
+      break;
+    }
+    if digit != ('0' as c_char).into()
+    {
+      seen_non_zero_digit = 1;
+    }
+    if seen_non_zero_digit != 0
+    {
+      result <<= 3;
+      result += digit as c_uint - ('0' as c_char as c_uint);
+    }
+    p_str = p_str.offset(1);
+  }
+  return result;
+}
+
+unsafe extern "C" fn vsf_sysutil_toupper(the_char: c_int)-> c_int
+{
+  return toupper( (the_char as c_uchar).try_into().unwrap());
+}
+
+unsafe extern "C" fn vsf_sysutil_isspace(the_char: c_int)-> c_int
+{
+  return isspace((the_char as c_uchar).try_into().unwrap());
+}
+
+unsafe extern "C" fn vsf_sysutil_isprint(the_char: c_int)-> c_int
+{
+  /* From Solar - we know better than some libc's! Don't let any potential
+   * control chars through
+   */
+  let mut uc: c_uchar = (the_char as c_uchar).try_into().unwrap();
+  if (uc <= 31)
+  {
+    return 0;
+  }
+  if (uc == 177)
+  {
+    return 0;
+  }
+  if (uc >= 128 && uc <= 159)
+  {
+    return 0;
+  }
+  return isprint(the_char);
+}
+
+unsafe extern "C" fn vsf_sysutil_isalnum(the_char: c_int) -> c_int
+{
+  return isalnum((the_char as c_uchar).try_into().unwrap());
+}
+
+unsafe extern "C" fn vsf_sysutil_isdigit(the_char: c_int)-> c_int
+{
+  return isdigit((the_char as c_uchar).try_into().unwrap());
+}
+
+unsafe extern "C" fn vsf_sysutil_getcwd(p_dest: *mut c_char, buf_size: c_uint)-> *const c_char
+{
+  let p_retval: *mut c_char;
+  if buf_size == 0 {
+    return p_dest;
+  }
+  p_retval = getcwd(p_dest, buf_size as usize);
+  *p_dest.offset((buf_size - 1).try_into().unwrap()) = '\0' as c_char;
+  return p_retval;
+}
+
+unsafe extern "C" fn vsf_sysutil_mkdir(p_dirname: *mut c_char, mode: c_uint) -> c_int
+{
+  return mkdir(p_dirname, mode);
+}
+
+unsafe extern "C" fn vsf_sysutil_rmdir( p_dirname: *mut c_char)-> c_int
+{
+  return rmdir(p_dirname);
+}
+
+unsafe extern "C" fn vsf_sysutil_chdir(p_dirname: *mut c_char) -> c_int
+{
+  return chdir(p_dirname);
+}
+
+unsafe extern "C" fn vsf_sysutil_rename( p_from: *mut c_char, p_to: *mut c_char) -> c_int
+{
+  return rename(p_from, p_to);
+}
+
+unsafe extern "C" fn vsf_sysutil_opendir(p_dirname: *const c_char) -> *mut vsf_sysutil_dir
+{
+  return  opendir(p_dirname) as *mut vsf_sysutil_dir ;
+}
+
+unsafe extern "C" fn sf_sysutil_closedir( p_dir: *mut vsf_sysutil_dir)
+{
+  let p_real_dir: *mut DIR =  p_dir as *mut DIR;
+  let mut retval: c_int = closedir(p_real_dir);
+  if retval != 0
+  {
+    die(str_to_const_char("closedir"));
+  }
+}
 
 unsafe fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
 {
   /* Safety */
-  if (size == 0)
+  if size == 0
   {
     return;
   }

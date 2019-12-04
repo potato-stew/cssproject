@@ -2,6 +2,19 @@ use std::ffi::CString;
 use std::os::raw::c_char;
 use std::ptr;
 
+
+//added own
+pub extern "C" fn __WTERMSIG(status: :: std :: os :: raw :: c_int)-> :: std :: os :: raw :: c_int{return ((status) & 0x7f);}
+
+pub extern "C" fn __WEXITSTATUS(status: :: std :: os :: raw :: c_int)-> :: std :: os :: raw :: c_int{return (((status) & 0xff00)>>8);}
+
+pub extern "C" fn __WIFEXITED(status: :: std :: os :: raw :: c_int)-> :: std :: os :: raw :: c_int{return(__WTERMSIG(status)==0).into();}
+
+pub extern "C" fn WIFEXITED(status: :: std :: os :: raw :: c_int)-> :: std :: os :: raw :: c_int{return __WIFEXITED(status);}
+
+pub extern "C" fn WEXITSTATUS(status: :: std :: os :: raw :: c_int)-> :: std :: os :: raw :: c_int{return __WEXITSTATUS(status);}
+
+
 pub fn str_to_const_char (s: &str) -> *const c_char {
   return CString::new(s).unwrap().as_ptr();
  }
@@ -1141,7 +1154,7 @@ Self :: new ()
  pub const O_NOCTTY : u32 = 256 ;
  pub const O_TRUNC : u32 = 512 ;
  pub const O_APPEND : u32 = 1024 ;
- pub const O_NONBLOCK : u32 = 2048 ;
+ pub const O_NONBLOCK : i32 = 2048 ;
  pub const O_NDELAY : u32 = 2048 ;
  pub const O_SYNC : u32 = 1052672 ;
  pub const O_FSYNC : u32 = 1052672 ;
@@ -3882,7 +3895,7 @@ assert_eq ! (:: std :: mem :: size_of :: < ucred > ( ) , 12usize , concat ! ( "S
  assert_eq ! (unsafe { & ( * ( :: std :: ptr :: null :: < ucred > ( ) ) ) . gid as * const _ as usize } , 8usize , concat ! ( "Offset of field: " , stringify ! ( ucred ) , "::" , stringify ! ( gid ) )) ;
 
 }
- # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct linger {
+ # [repr ( C )] # [derive (Default, Debug , Copy , Clone )] pub struct linger {
 pub l_onoff : :: std :: os :: raw :: c_int , pub l_linger : :: std :: os :: raw :: c_int ,
 }
  # [test] fn bindgen_test_layout_linger () {
