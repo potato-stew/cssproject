@@ -562,6 +562,29 @@ unsafe extern "C" fn vsf_sysutil_wait_reap_one() -> c_int
   return retval;
 }
 
+unsafe extern "C" fn vsf_sysutil_wait_get_retval( p_waitret: *const vsf_sysutil_wait_retval) -> c_int
+{
+  return (*p_waitret).PRIVATE_HANDS_OFF_syscall_retval;
+}
+
+unsafe extern "C" fn vsf_sysutil_wait_exited_normally(p_waitret: *const vsf_sysutil_wait_retval) -> c_int
+{
+  let mut status: c_int  = (*p_waitret).PRIVATE_HANDS_OFF_exit_status;
+  return WIFEXITED(status);
+}
+
+unsafe extern "C" fn vsf_sysutil_wait_get_exitcode(p_waitret: *const vsf_sysutil_wait_retval) -> c_int
+{
+let mut status: c_int;
+  if vsf_sysutil_wait_exited_normally(p_waitret) != 0
+  {
+    bug(str_to_const_char("not a normal exit in vsf_sysutil_wait_get_exitcode"));
+  }
+  status = (*p_waitret).PRIVATE_HANDS_OFF_exit_status;
+  return WEXITSTATUS(status);
+}
+
+
 
 unsafe fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
 {
