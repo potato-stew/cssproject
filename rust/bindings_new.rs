@@ -14,6 +14,11 @@ pub extern "C" fn WIFEXITED(status: :: std :: os :: raw :: c_int)-> :: std :: os
 
 pub extern "C" fn WEXITSTATUS(status: :: std :: os :: raw :: c_int)-> :: std :: os :: raw :: c_int{return __WEXITSTATUS(status);}
 
+pub type size_t = :: std :: os :: raw :: c_ulong;
+
+extern "C"  {
+  pub fn dirfd(a:*mut DIR)->:: std :: os :: raw :: c_int;
+}
 
 pub fn str_to_const_char (s: &str) -> *const c_char {
   return CString::new(s).unwrap().as_ptr();
@@ -1147,13 +1152,13 @@ Self :: new ()
  pub const F_SETLKW64 : u32 = 7 ;
  pub const O_ACCMODE : u32 = 3 ;
  pub const O_RDONLY : u32 = 0 ;
- pub const O_WRONLY : u32 = 1 ;
+ pub const O_WRONLY : i32 = 1 ;
  pub const O_RDWR : u32 = 2 ;
- pub const O_CREAT : u32 = 64 ;
- pub const O_EXCL : u32 = 128 ;
+ pub const O_CREAT : i32 = 64 ;
+ pub const O_EXCL : i32 = 128 ;
  pub const O_NOCTTY : u32 = 256 ;
  pub const O_TRUNC : u32 = 512 ;
- pub const O_APPEND : u32 = 1024 ;
+ pub const O_APPEND : i32 = 1024 ;
  pub const O_NONBLOCK : i32 = 2048 ;
  pub const O_NDELAY : u32 = 2048 ;
  pub const O_SYNC : u32 = 1052672 ;

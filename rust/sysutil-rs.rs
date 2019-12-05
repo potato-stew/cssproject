@@ -753,14 +753,14 @@ unsafe extern "C" fn vsf_sysutil_a_to_filesize_t(p_str: *const c_char) -> filesi
 
 unsafe extern "C" fn vsf_sysutil_ulong_to_str(the_ulong: c_ulong) -> *const c_char
 {
-  let mut ulong_buf: [c_char; 32]=[0;32];
+  static mut ulong_buf: [c_char; 32]=[0;32];
   snprintf(&mut ulong_buf[0], 32, str_to_const_char("%lu"), the_ulong);
   return &ulong_buf[0];
 }
 
 unsafe extern "C" fn vsf_sysutil_filesize_t_to_str(the_filesize: filesize_t ) -> *const c_char
 {
-  let mut filesize_buf: [c_char; 32]=[0;32];
+  static mut filesize_buf: [c_char; 32]=[0;32];
   if (size_of::<c_long>() == 8)
   {
     /* Avoid using non-standard %ll if we can */
@@ -776,14 +776,14 @@ unsafe extern "C" fn vsf_sysutil_filesize_t_to_str(the_filesize: filesize_t ) ->
 
 unsafe extern "C" fn vsf_sysutil_double_to_str(the_double: c_double) -> *const c_char
 {
-  let mut double_buf: [c_char; 32]=[0;32];
+  static mut double_buf: [c_char; 32]=[0;32];
   snprintf(&mut double_buf[0], 32, str_to_const_char("%.2f"), the_double);
   return &double_buf[0];
 }
 
 unsafe extern "C" fn vsf_sysutil_uint_to_octal(the_uint: c_uint)-> *const c_char
 {
-  let mut octal_buf:[c_char; 32]=[0;32];
+  static mut octal_buf:[c_char; 32]=[0;32];
   if the_uint == 0
   {
     octal_buf[0] = '0' as c_char;
@@ -909,7 +909,36 @@ unsafe extern "C" fn sf_sysutil_closedir( p_dir: *mut vsf_sysutil_dir)
   }
 }
 
-unsafe fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
+unsafe extern "C" fn vsf_sysutil_next_dirent(p_dir: *mut vsf_sysutil_dir) -> *const c_char
+{
+  let p_real_dir: *mut DIR =  p_dir as *mut DIR;
+  let p_dirent: *mut dirent =  readdir(p_real_dir);
+  if p_dirent == ptr::null_mut()
+  {
+    return ptr::null_mut();
+  }
+
+  return &((*p_dirent).d_name)[0];
+}
+
+unsafe extern "C" fn vsf_sysutil_strlen(p_text: *const c_char) -> c_uint
+{
+  let ret: size_t  = strlen(p_text) as u64;
+  /* A defense in depth measure. */
+  if ret > (WINT_MAX / 8).into()
+  {
+    die(str_to_const_char("string suspiciously long"));
+  }
+  return ret as c_uint;
+}
+
+
+unsafe extern "C" fn vsf_sysutil_strdup(p_str: *const c_char)-> *const c_char
+{
+  return strdup(p_str);
+}
+
+unsafe extern "C" fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
 {
   /* Safety */
   if size == 0
@@ -918,3 +947,368 @@ unsafe fn vsf_sysutil_memclr(p_dest: *mut c_void, size: usize)
   }
   memset(p_dest, 0, size);
 }
+
+unsafe extern "C" fn vsf_sysutil_memcpy(p_dest: *mut c_void, p_src:*const c_void, size: c_uint)
+{
+  /* Safety */
+  if size == 0
+  {
+    return;
+  }
+  /* Defense in depth */
+  if size > WINT_MAX
+  {
+    die(str_to_const_char("possible negative value to memcpy?"));
+  }
+  memcpy(p_dest, p_src, size as usize);
+}
+
+unsafe extern "C" fn vsf_sysutil_strcpy(p_dest: *mut c_char, p_src: *const c_char, maxsize: c_uint)
+{
+  if maxsize == 0
+  {
+    return;
+  }
+  strncpy(p_dest, p_src, maxsize as usize);
+  *p_dest.offset((maxsize - 1) as isize) = '\0' as c_char;
+}
+
+unsafe extern "C" fn vsf_sysutil_strcmp(p_src1: *const c_char, p_src2: *const c_char)-> c_int
+{
+  return strcmp(p_src1, p_src2);
+}
+
+unsafe extern "C" fn vsf_sysutil_getpagesize()-> c_uint
+{
+  static mut s_page_size: c_uint = 0;
+  if s_page_size == 0
+  {
+    s_page_size = getpagesize() as u32;
+    if s_page_size == 0
+    {
+      die(str_to_const_char("getpagesize"));
+    }
+  }
+  return s_page_size;
+}
+
+unsafe extern "C" fn vsf_sysutil_translate_memprot(perm: EVSFSysUtilMapPermission)-> c_int
+{
+  let mut retval: c_int = 0;
+
+  match perm
+  {
+    EVSFSysUtilMapPermission_kVSFSysUtilMapProtReadOnly=> 
+      retval = PROT_READ as i32,
+    
+    EVSFSysUtilMapPermission_kVSFSysUtilMapProtNone=>
+      retval = PROT_NONE as i32,
+      
+    _ =>
+      bug(str_to_const_char("bad value in vsf_sysutil_translate_memprot")),
+  }
+  return retval;
+}
+
+unsafe extern "C" fn vsf_sysutil_memprotect(p_addr: *mut c_void, len: c_uint,
+                       perm: EVSFSysUtilMapPermission)
+{
+  let mut prot: c_int = vsf_sysutil_translate_memprot(perm);
+  let mut retval: c_int = mprotect(p_addr, len as usize, prot);
+  if retval != 0
+  {
+    die(str_to_const_char("mprotect"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_memunmap(p_start: *mut c_void, length: c_uint)
+{
+  let mut retval:c_int = munmap(p_start, length as usize);
+  if retval != 0
+  {
+    die(str_to_const_char("munmap"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_translate_openmode(mode: EVSFSysUtilOpenMode) -> c_int
+{
+  let mut retval:c_int = 0;
+  match mode
+  {
+    EVSFSysUtilOpenMode_kVSFSysUtilOpenReadOnly=>
+      retval = O_RDONLY as i32,
+      
+    EVSFSysUtilOpenMode_kVSFSysUtilOpenWriteOnly=>
+      retval = O_WRONLY as i32,
+      
+      EVSFSysUtilOpenMode_kVSFSysUtilOpenReadWrite=>
+      retval = O_RDWR as i32,
+      
+    _=>
+      bug(str_to_const_char("bad mode in vsf_sysutil_translate_openmode")),
+  }
+  return retval;
+}
+
+unsafe extern "C" fn vsf_sysutil_open_file(p_filename:* const c_char,
+                      mode: EVSFSysUtilOpenMode) -> c_int
+{
+  return open(p_filename, vsf_sysutil_translate_openmode(mode) | O_NONBLOCK);
+}
+
+unsafe extern "C" fn vsf_sysutil_create_file_exclusive(p_filename: *const c_char)-> c_int
+{
+  /* umask() also contributes to end mode */
+  return open(p_filename, (O_CREAT | O_EXCL | O_WRONLY | O_APPEND).try_into().unwrap(),
+              tunable_file_open_mode);
+}
+
+unsafe extern "C" fn vsf_sysutil_create_or_open_file(p_filename: *const c_char, mode: c_uint)-> c_int
+{
+  return open(p_filename, O_CREAT | O_WRONLY | O_NONBLOCK, mode);
+}
+
+unsafe extern "C" fn vsf_sysutil_create_or_open_file_append( p_filename: *const c_char,
+                                       mode: c_uint)-> c_int
+{
+  return open(p_filename, O_CREAT | O_WRONLY | O_NONBLOCK | O_APPEND, mode);
+}
+
+unsafe extern "C" fn vsf_sysutil_dupfd2(old_fd:c_int, new_fd:c_int)
+{
+  let mut retval: c_int;
+  if old_fd == new_fd
+  {
+    return;
+  }
+  retval = dup2(old_fd, new_fd);
+  if retval != new_fd
+  {
+    die(str_to_const_char("dup2"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_close(fd: c_int)
+{
+  while true
+  {
+    let mut retval: c_int = close(fd);
+    if retval != 0
+    {
+      if *__errno_location() == EINTR as i32
+      {
+        vsf_sysutil_check_pending_actions(EVSFSysUtilInterruptContext_kVSFSysUtilUnknown, 0, 0);
+        continue;
+      }
+      die(str_to_const_char("close"));
+    }
+    return;
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_close_failok(fd: c_int)-> c_int
+{
+  return close(fd);
+}
+
+unsafe extern "C" fn vsf_sysutil_unlink(p_dead: *const c_char)-> c_int
+{
+  return unlink(p_dead);
+}
+
+unsafe extern "C" fn vsf_sysutil_write_access(p_filename:*const c_char)-> c_int
+{
+  let mut retval:c_int = access(p_filename, W_OK as i32);
+  return (retval == 0) as c_int ;
+}
+
+unsafe extern "C" fn vsf_sysutil_alloc_statbuf( p_ptr: *mut*mut vsf_sysutil_statbuf)
+{
+  if *p_ptr == ptr::null_mut()
+  {
+    *p_ptr = vsf_sysutil_malloc(size_of::<stat>().try_into().unwrap()) as *mut _ as *mut vsf_sysutil_statbuf;
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_fstat(fd: c_int, p_ptr:*mut* mut vsf_sysutil_statbuf)
+{
+  let mut retval: c_int;
+  vsf_sysutil_alloc_statbuf(p_ptr);
+  retval = fstat(fd, (*p_ptr) as *mut stat);
+  if retval != 0
+  {
+    die(str_to_const_char("fstat"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_stat( p_name: *const c_char,  p_ptr: *mut*mut vsf_sysutil_statbuf) -> c_int
+{
+  vsf_sysutil_alloc_statbuf(p_ptr);
+  return stat(p_name, (*p_ptr) as *mut stat);
+}
+
+unsafe extern "C" fn vsf_sysutil_lstat( p_name: *const c_char,  p_ptr: *mut*mut vsf_sysutil_statbuf) -> c_int
+{
+  vsf_sysutil_alloc_statbuf(p_ptr);
+  return lstat(p_name, (*p_ptr) as *mut stat);
+}
+
+unsafe extern "C" fn vsf_sysutil_dir_stat(p_dir: *const vsf_sysutil_dir,
+                      p_ptr:*mut*mut vsf_sysutil_statbuf)
+{
+  let mut fd: c_int = dirfd(p_dir as *mut DIR);
+  vsf_sysutil_fstat(fd, p_ptr);
+}
+
+/*
+unsafe extern "C" fn vsf_sysutil_statbuf_is_regfile(p_stat: *mut vsf_sysutil_statbuf)-> c_int
+{
+  let p_realstat: *const stat =  p_stat as *mut stat;
+  return S_ISREG((*p_realstat).st_mode);
+}
+
+
+unsafe extern "C" fn vsf_sysutil_statbuf_is_symlink(p_stat: *mut vsf_sysutil_statbuf)-> c_int
+{
+  let p_realstat: *const stat = p_stat as *mut stat;
+  return S_ISLNK((*p_realstat).st_mode);
+}
+
+
+unsafe extern "C" fn vsf_sysutil_statbuf_is_socket(p_stat: *mut vsf_sysutil_statbuf)-> c_int
+{
+  let p_realstat: *const stat = p_stat as *mut stat;
+  return S_ISSOCK((*p_realstat).st_mode);
+}
+
+unsafe extern "C" fn vsf_sysutil_statbuf_is_dir( p_stat: *const vsf_sysutil_statbuf) -> c_int
+{
+  let p_realstat: *const stat =  p_stat as *mut stat;
+  return S_ISDIR((*p_realstat).st_mode);
+}
+*/
+
+unsafe extern "C" fn vsf_sysutil_statbuf_get_perms(p_statbuf: *const vsf_sysutil_statbuf) -> *const c_char
+{
+  static mut perms:[c_char;11]=[0;11];
+  let mut i: c_int;
+  let p_stat: *const stat =  p_statbuf as *const stat;
+  for i in 0..10
+  {
+    perms[i] = '-' as c_char;
+  }
+  perms[0] = '?' as c_char;
+  match ((*p_stat).st_mode & S_IFMT)
+  {
+    S_IFREG => perms[0] = '-' as i8,
+    S_IFDIR => perms[0] = 'd' as i8,
+    S_IFLNK => perms[0] = 'l' as i8,
+    S_IFIFO => perms[0] = 'p' as i8,
+    S_IFSOCK => perms[0] = 's' as i8,
+    S_IFCHR => perms[0] = 'c' as i8,
+    S_IFBLK => perms[0] = 'b' as i8,
+    _ =>{},
+  }
+  if (0!=(*p_stat).st_mode & S_IRUSR) {perms[1] = 'r' as i8;}
+  if (0!=(*p_stat).st_mode & S_IWUSR) {perms[2] = 'w' as i8;}
+  if (0!=(*p_stat).st_mode & S_IXUSR) {perms[3] = 'x' as i8;}
+  if (0!=(*p_stat).st_mode & S_IRGRP) {perms[4] = 'r' as i8;}
+  if (0!=(*p_stat).st_mode & S_IWGRP) {perms[5] = 'w' as i8;}
+  if (0!=(*p_stat).st_mode & S_IXGRP) {perms[6] = 'x' as i8;}
+  if (0!=(*p_stat).st_mode & S_IROTH) {perms[7] = 'r' as i8;}
+  if (0!=(*p_stat).st_mode & S_IWOTH) {perms[8] = 'w' as i8;}
+  if (0!=(*p_stat).st_mode & S_IXOTH) {perms[9] = 'x' as i8;}
+  if (0!=(*p_stat).st_mode & S_ISUID) {perms[3] = if perms[3] == 'x' as c_char { 's' as i8 } else { 'S' as i8}; }
+  if (0!=(*p_stat).st_mode & S_ISGID) {perms[6] = if perms[6] == 'x' as c_char { 's' as i8 } else { 'S' as i8}; }
+  if (0!= (*p_stat).st_mode & S_ISVTX) {perms[9] = if perms[9] == 'x' as c_char { 't' as i8 } else { 'T' as i8}; }
+  perms[10] = '\0' as c_char;
+  return &perms[0];
+}
+
+unsafe extern "C" fn vsf_sysutil_statbuf_get_date( p_statbuf: *const vsf_sysutil_statbuf,
+                            use_localtime: c_int, curr_time: c_long) -> *const c_char
+{
+  static mut datebuf:[c_char;64] = [0;64];
+  let mut retval:c_int;
+  let mut p_tm: *mut tm ;
+  let mut p_stat: *const stat = p_statbuf as *const stat;
+  let mut p_date_format: *const c_char = str_to_const_char("%b %d %H:%M");
+  if use_localtime !=0 
+  {
+    p_tm = gmtime(&(*p_stat).st_mtim.tv_sec);
+  }
+  else
+  {
+    p_tm = localtime(&(*p_stat).st_mtim.tv_sec);
+  }
+  /* Is this a future or 6 months old date? If so, we drop to year format */
+  if (*p_stat).st_mtim.tv_sec > curr_time ||
+      (curr_time - (*p_stat).st_mtim.tv_sec) > 60*60*24*182
+  {
+    p_date_format = str_to_const_char("%b %d  %Y");
+  }
+  retval = strftime(&mut datebuf[0], 64, p_date_format, p_tm).try_into().unwrap();
+  datebuf[64-1] = '\0' as c_char ;
+  if retval == 0
+  {
+    die(str_to_const_char("strftime"));
+  }
+  return &datebuf[0];
+}
+
+unsafe extern "C" fn vsf_sysutil_statbuf_get_numeric_date (
+  p_statbuf: *const vsf_sysutil_statbuf,
+  use_localtime:c_int)-> *const c_char
+{
+  static mut datebuf:[c_char;15] = [0;15];
+  let mut p_stat: *const stat = p_statbuf as *const stat;
+  let mut p_tm: *mut tm ;
+  let mut retval: c_int;
+  if use_localtime!=0
+  {
+    p_tm = gmtime(&(*p_stat).st_mtim.tv_sec);
+  }
+  else
+  {
+    p_tm = localtime(&(*p_stat).st_mtim.tv_sec);
+  }
+  retval = strftime(&mut datebuf[0], 15, str_to_const_char("%Y%m%d%H%M%S"), p_tm).try_into().unwrap();
+  if (retval == 0)
+  {
+    die(str_to_const_char("strftime"));
+  }
+  return &datebuf[0];
+}
+
+unsafe extern "C" fn vsf_sysutil_statbuf_get_size(p_statbuf: *const vsf_sysutil_statbuf) -> filesize_t
+{
+  let mut p_stat: *const stat = p_statbuf as *const stat;
+  if (*p_stat).st_size < 0
+  {
+    die(str_to_const_char("invalid inode size in vsf_sysutil_statbuf_get_size"));
+  }
+  return (*p_stat).st_size;
+}
+
+unsafe extern "C" fn vsf_sysutil_statbuf_get_uid(p_statbuf: *const vsf_sysutil_statbuf) -> c_int
+{
+  let mut p_stat: *const stat = p_statbuf as *const stat;
+  return (*p_stat).st_uid as i32;
+}
+
+unsafe extern "C" fn vsf_sysutil_statbuf_get_gid(p_statbuf: *const vsf_sysutil_statbuf) -> c_int{
+  let mut p_stat: *const stat = p_statbuf as *const stat;
+  return (*p_stat).st_gid as i32;
+}
+
+unsafe extern "C" fn vsf_sysutil_statbuf_get_links(p_statbuf: *const vsf_sysutil_statbuf) -> c_uint
+{
+  let mut p_stat: *const stat = p_statbuf as *const stat;
+  return (*p_stat).st_nlink as u32;
+}
+
+
+
+
+
+
