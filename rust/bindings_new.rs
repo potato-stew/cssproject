@@ -5876,7 +5876,7 @@ pub fn vsf_sysutil_isalnum (the_char : :: std :: os :: raw :: c_int) -> :: std :
 pub fn vsf_sysutil_isdigit (the_char : :: std :: os :: raw :: c_int) -> :: std :: os :: raw :: c_int ;
 
 }
- # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct vsf_sysutil_socketpair_retval {
+ # [repr ( C )] # [derive ( Default,Debug , Copy , Clone )] pub struct vsf_sysutil_socketpair_retval {
 pub socket_one : :: std :: os :: raw :: c_int , pub socket_two : :: std :: os :: raw :: c_int ,
 }
  # [test] fn bindgen_test_layout_vsf_sysutil_socketpair_retval () {
@@ -7971,7 +7971,7 @@ pub static mut program_invocation_short_name : * mut :: std :: os :: raw :: c_ch
 
 }
  pub type error_t = :: std :: os :: raw :: c_int ;
- # [repr ( C )] # [derive ( Debug , Copy , Clone )] pub struct flock {
+ # [repr ( C )] # [derive ( Default, Debug , Copy , Clone )] pub struct flock {
 pub l_type : :: std :: os :: raw :: c_short , pub l_whence : :: std :: os :: raw :: c_short , pub l_start : __off_t , pub l_len : __off_t , pub l_pid : __pid_t ,
 }
  # [test] fn bindgen_test_layout_flock () {

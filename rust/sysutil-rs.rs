@@ -20,6 +20,10 @@ use std::ptr;
 use std::convert::*;
 use std::mem::size_of;
 
+fn default_sockaddr() -> sockaddr {
+  sockaddr { sa_family: 3, sa_data: [0; 14usize] }
+}
+
 /* File locals */
 unsafe extern "C" fn vsf_sysutil_alrm_sighandler(signum: c_int)
 {
@@ -1307,8 +1311,383 @@ unsafe extern "C" fn vsf_sysutil_statbuf_get_links(p_statbuf: *const vsf_sysutil
   return (*p_stat).st_nlink as u32;
 }
 
+unsafe extern "C" fn vsf_sysutil_statbuf_is_readable_other(
+  p_statbuf: *const vsf_sysutil_statbuf)->c_int
+{
+  let mut p_stat: *const stat = p_statbuf as *const stat;
+  if ((*p_stat).st_mode & S_IROTH) != 0 
+  {
+    return 1;
+  }
+  return 0;
+}
+
+unsafe extern "C" fn vsf_sysutil_statbuf_get_sortkey_mtime(
+  p_statbuf: *const vsf_sysutil_statbuf) -> *const c_char
+{
+  static mut intbuf:[c_char;32]=[0;32];
+  let mut p_stat: *const stat = p_statbuf as *const stat;
+    /* This slight hack function must return a character date format such that
+   * more recent dates appear later in the alphabet! Most notably, we must
+   * make sure we pad to the same length with 0's 
+   */
+  snprintf(&mut intbuf[0], 32, str_to_const_char("%030ld") , (*p_stat).st_mtim.tv_sec);
+  return &intbuf[0];
+}
+
+unsafe extern "C" fn vsf_sysutil_fchown(fd: c_int, uid:c_int, gid: c_int)
+{
+  if fchown(fd, uid as u32, gid as u32) != 0
+  {
+    die(str_to_const_char("fchown"));
+  }
+}
+
+unsafe extern "C" fn  vsf_sysutil_fchmod( fd:c_int, mut mode: c_uint)
+{
+  mode = mode & 0777;
+  if fchmod(fd, mode)!=0
+  {
+    die(str_to_const_char("fchmod"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_chmod(p_filename: *const c_char, mut mode: c_uint) -> c_int
+{
+  /* Safety: mask "mode" to just access permissions, e.g. no suid setting! */
+  mode = mode & 0777;
+  return chmod(p_filename, mode);
+}
 
 
+unsafe extern "C" fn vsf_sysutil_lock_file_write(fd: c_int) -> c_int
+{
+  return lock_internal(fd, F_WRLCK as i32);
+}
+
+unsafe extern "C" fn vsf_sysutil_lock_file_read(fd: c_int)-> c_int
+{
+  return lock_internal(fd, F_RDLCK as i32);
+}
+
+unsafe extern "C" fn lock_internal(fd:c_int, lock_type: c_int) -> c_int
+{
+  let mut the_lock = flock::default() ;
+  let mut retval: c_int;
+  let mut saved_errno: c_int;
+  vsf_sysutil_memclr(&mut the_lock as *mut _ as *mut c_void, size_of::<flock>());
+  the_lock.l_type = lock_type as i16;
+  the_lock.l_whence = SEEK_SET as i16;
+  the_lock.l_start = 0;
+  the_lock.l_len = 0;
+  //equivalent of a dowhile loop
+  loop
+  {
+    retval = fcntl(fd, F_SETLKW as i32, &the_lock);
+    saved_errno = *__errno_location ();
+    vsf_sysutil_check_pending_actions(EVSFSysUtilInterruptContext_kVSFSysUtilUnknown, 0, 0);
+
+    if !(retval < 0 && saved_errno == EINTR as i32){break;}
+  }
+  return retval;
+}
+
+unsafe extern "C" fn vsf_sysutil_unlock_file(fd: c_int)
+{
+  let mut retval: c_int;
+  let mut the_lock = flock::default() ;
+    vsf_sysutil_memclr(&mut the_lock as *mut _ as *mut c_void, size_of::<flock>());
+  the_lock.l_type = F_UNLCK as i16;
+  the_lock.l_whence = SEEK_SET as i16;
+  the_lock.l_start = 0;
+  the_lock.l_len = 0;
+  retval = fcntl(fd, F_SETLK as i32, &the_lock);
+  if retval != 0
+  {
+    die(str_to_const_char("fcntl"));
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_readlink(p_filename: *const char, p_dest: *mut c_char, bufsiz: c_uint)-> c_int
+{
+  let mut retval: c_int;
+  if bufsiz == 0 {
+    return -1;
+  }
+  retval = readlink(p_filename as *const c_char, p_dest, (bufsiz - 1)as usize) as i32;
+  if (retval < 0)
+  {
+    return retval;
+  }
+  /* Ensure buffer is NULL terminated; readlink(2) doesn't do that */
+  *p_dest.offset(retval as isize)= '\0' as c_char;
+  return retval;
+}
+
+unsafe extern "C" fn vsf_sysutil_retval_is_error( retval:c_int)-> c_int
+{
+  if retval < 0
+  {
+    return 1;
+  }
+  return 0;
+}
+
+unsafe extern "C" fn vsf_sysutil_get_error()-> EVSFSysUtilError
+{
+  let mut retval: EVSFSysUtilError = EVSFSysUtilError_kVSFSysUtilErrUnknown;
+  match (*__errno_location () as u32)
+  {
+    EADDRINUSE=>
+    retval = EVSFSysUtilError_kVSFSysUtilErrADDRINUSE,
+    
+    ENOSYS=>
+    retval = EVSFSysUtilError_kVSFSysUtilErrNOSYS,
+    
+    EINTR=>
+    retval = EVSFSysUtilError_kVSFSysUtilErrINTR,
+    
+    EINVAL=>    
+    retval = EVSFSysUtilError_kVSFSysUtilErrINVAL,
+    
+    EOPNOTSUPP=>
+    retval = EVSFSysUtilError_kVSFSysUtilErrOPNOTSUPP,
+    
+    EACCES=>
+    retval = EVSFSysUtilError_kVSFSysUtilErrACCES,
+
+    ENOENT=>
+    retval = EVSFSysUtilError_kVSFSysUtilErrNOENT,
+    
+    _ =>{},
+  }
+  return retval;
+}
+
+unsafe extern "C" fn vsf_sysutil_get_ipv4_sock()-> c_int
+{
+  let mut retval:c_int = socket(PF_INET as i32, __socket_type_SOCK_STREAM as i32, IPPROTO_TCP as i32);
+  if retval < 0
+  {
+    die(str_to_const_char("socket"));
+  }
+  return retval;
+}
+
+unsafe extern "C" fn vsf_sysutil_get_ipv6_sock()-> c_int
+{
+  let mut retval: c_int = socket(PF_INET6 as i32, __socket_type_SOCK_STREAM as i32, IPPROTO_TCP as i32);
+  if retval < 0
+  {
+    die(str_to_const_char("socket"));
+  }
+  return retval;
+}
+ 
+unsafe extern "C" fn vsf_sysutil_unix_stream_socketpair()-> vsf_sysutil_socketpair_retval
+{
+  let mut retval = vsf_sysutil_socketpair_retval::default();
+  let mut the_sockets:[c_int;2]=[0;2];
+  let mut sys_retval: c_int = socketpair(PF_UNIX as i32, __socket_type_SOCK_STREAM as i32, 0, &mut the_sockets[0]);
+  if sys_retval != 0
+  {
+    die(str_to_const_char("socketpair"));
+  }
+  retval.socket_one = the_sockets[0];
+  retval.socket_two = the_sockets[1];
+  return retval;
+}
+
+unsafe extern "C" fn vsf_sysutil_bind(fd: c_int, p_sockptr: *const vsf_sysutil_sockaddr)-> c_int
+{
+  let mut p_sockaddr: *const sockaddr = &((*p_sockptr).u.u_sockaddr);
+  let mut len = 0;
+  if ((*p_sockaddr).sa_family == AF_INET as u16)
+  {
+    len = size_of::<sockaddr_in>();
+  }
+  else if ((*p_sockaddr).sa_family == AF_INET6 as u16)
+  {
+    len = size_of::<sockaddr_in6>();
+  }
+  else
+  {
+    die(str_to_const_char("can only support ipv4 and ipv6 currently"));
+  }
+  return bind(fd, p_sockaddr, len as u32);
+}
+
+unsafe extern "C" fn vsf_sysutil_listen(fd: c_int, backlog: c_int)-> c_int
+{
+  let mut retval: c_int = listen(fd, backlog);
+  if (vsf_sysutil_retval_is_error(retval) != 0  &&
+      vsf_sysutil_get_error() != EVSFSysUtilError_kVSFSysUtilErrADDRINUSE)
+  {
+    die(str_to_const_char("listen"));
+  }
+  return retval;
+}
+//-----------------------------------------------------------------------------------------------------------------------------------//
+//skipping vsf_sysutil_accept_timeout, vsf_sysutil_connect_timeout beacuse of lot of dependencies
+//-----------------------------------------------------------------------------------------------------------------------------------//
+
+unsafe extern "C" fn vsf_sysutil_getsockname(fd:c_int, p_sockptr:*mut*mut vsf_sysutil_sockaddr)
+{
+  let mut the_addr= vsf_sysutil_sockaddr__bindgen_ty_1 { u_sockaddr: default_sockaddr() };
+  let mut retval:c_int;
+  let mut socklen: socklen_t  = size_of::<vsf_sysutil_sockaddr>().try_into().unwrap();
+  vsf_sysutil_sockaddr_clear(&mut (*p_sockptr));
+  retval = getsockname(fd, &mut(the_addr.u_sockaddr), &mut socklen);
+  if retval != 0
+  {
+    die(str_to_const_char("getsockname"));
+  }
+  if (the_addr.u_sockaddr.sa_family != AF_INET as u16 &&
+      the_addr.u_sockaddr.sa_family != AF_INET6 as u16)
+  {
+    die(str_to_const_char("can only support ipv4 and ipv6 currently"));
+  }
+  vsf_sysutil_sockaddr_alloc(p_sockptr);
+  if (socklen > size_of::<vsf_sysutil_sockaddr__bindgen_ty_1>() as u32)
+  {
+    socklen = size_of::<vsf_sysutil_sockaddr__bindgen_ty_1>() as u32;
+  }
+  vsf_sysutil_memcpy(*p_sockptr as *mut _ as *mut c_void , &the_addr as *const _ as *const c_void, socklen);
+}
 
 
+unsafe extern "C" fn  Evsf_sysutil_getpeername(fd:c_int, p_sockptr:*mut*mut vsf_sysutil_sockaddr)
+{
+  let mut the_addr= vsf_sysutil_sockaddr__bindgen_ty_1 { u_sockaddr: default_sockaddr() };
+  let mut retval:c_int;
+  let mut socklen: socklen_t  = size_of::<vsf_sysutil_sockaddr>().try_into().unwrap();
+  vsf_sysutil_sockaddr_clear(&mut (*p_sockptr));
+  retval = getpeername(fd, &mut the_addr.u_sockaddr, &mut socklen);
+  if retval != 0
+  {
+    die(str_to_const_char("getpeername"));
+  }
+  if (the_addr.u_sockaddr.sa_family != AF_INET as u16 &&
+      the_addr.u_sockaddr.sa_family != AF_INET6 as u16)
+  {
+    die(str_to_const_char("can only support ipv4 and ipv6 currently"));
+  }
+  vsf_sysutil_sockaddr_alloc(p_sockptr);
+  if (socklen > size_of::<vsf_sysutil_sockaddr__bindgen_ty_1>() as u32)
+  {
+    socklen = size_of::<vsf_sysutil_sockaddr__bindgen_ty_1>() as u32;
+  }
+  vsf_sysutil_memcpy(*p_sockptr as *mut _ as *mut c_void , &the_addr as *const _ as *const c_void, socklen);
+}
 
+unsafe extern "C" fn vsf_sysutil_shutdown_failok(fd:c_int)
+{
+  /* SHUT_RDWR is a relatively new addition */
+  //#ifndef SHUT_RDWR
+  //#define SHUT_RDWR 2
+  //#endif
+  shutdown(fd, SHUT_RDWR as i32);
+}
+
+unsafe extern "C" fn vsf_sysutil_shutdown_read_failok(fd:c_int)
+{
+  /* SHUT_RD is a relatively new addition */
+  //#ifndef SHUT_RD
+  //#define SHUT_RD 0
+  //#endif
+  shutdown(fd, SHUT_RD as i32);
+}
+
+unsafe extern "C" fn vsf_sysutil_sockaddr_clear(p_sockptr:*mut*mut vsf_sysutil_sockaddr)
+{
+  if *p_sockptr != ptr::null_mut()
+  {
+    vsf_sysutil_free(*p_sockptr as *mut _ as *mut c_void);
+    *p_sockptr = ptr::null_mut();
+  }
+}
+
+unsafe extern "C" fn vsf_sysutil_sockaddr_alloc(p_sockptr:*mut*mut vsf_sysutil_sockaddr)
+{
+  vsf_sysutil_sockaddr_clear(p_sockptr);
+  *p_sockptr = vsf_sysutil_malloc(size_of::<*mut *mut vsf_sysutil_sockaddr>() as u32) as *mut bindings_new::vsf_sysutil_sockaddr;
+  vsf_sysutil_memclr(*p_sockptr as *mut _ as *mut c_void, size_of::<*mut *mut vsf_sysutil_sockaddr>());
+}
+
+unsafe extern "C" fn vsf_sysutil_sockaddr_alloc_ipv4(p_sockptr:*mut*mut vsf_sysutil_sockaddr)
+{
+  vsf_sysutil_sockaddr_alloc(p_sockptr);
+  (*(*p_sockptr)).u.u_sockaddr.sa_family = AF_INET as u16;
+}
+
+unsafe extern "C" fn vsf_sysutil_sockaddr_alloc_ipv6(p_sockptr:*mut*mut vsf_sysutil_sockaddr)
+{
+  vsf_sysutil_sockaddr_alloc(p_sockptr);
+  (*(*p_sockptr)).u.u_sockaddr.sa_family = AF_INET6 as u16;
+}
+
+unsafe extern "C" fn fnvsf_sysutil_sockaddr_clone(p_sockptr:*mut*mut vsf_sysutil_sockaddr,
+                           p_src: *const vsf_sysutil_sockaddr)
+{
+  let mut p_sockaddr: *mut vsf_sysutil_sockaddr = ptr::null_mut();
+  vsf_sysutil_sockaddr_alloc(p_sockptr);
+  let mut p_sockaddr = *p_sockptr;
+  if ((*p_src).u.u_sockaddr.sa_family == AF_INET as u16)
+  {
+    (*p_sockaddr).u.u_sockaddr.sa_family = AF_INET as u16;
+    vsf_sysutil_memcpy(&mut (*p_sockaddr).u.u_sockaddr_in.sin_addr as &mut _ as *mut _ as *mut c_void ,
+                       & (*p_src).u.u_sockaddr_in.sin_addr as & _ as *const _ as *const c_void,
+                       size_of::<in6_addr>() as u32);
+  }
+  else if ((*p_src).u.u_sockaddr.sa_family == AF_INET6 as u16)
+  {
+    (*p_sockaddr).u.u_sockaddr.sa_family = AF_INET6 as u16;
+    vsf_sysutil_memcpy(&mut (*p_sockaddr).u.u_sockaddr_in6.sin6_addr as &mut _ as *mut _ as *mut c_void,
+                       & (*p_src).u.u_sockaddr_in6.sin6_addr as & _ as *const _ as *const c_void,
+                       size_of::<in6_addr>() as u32);
+    (*p_sockaddr).u.u_sockaddr_in6.sin6_scope_id =
+    (*p_src).u.u_sockaddr_in6.sin6_scope_id;
+  }
+  else
+  {
+    die(str_to_const_char("can only support ipv4 and ipv6 currently"));
+  }
+}
+
+
+//-----------------------------------------------------------------------------------------------------------------------------------//
+//skipping vsf_sysutil_sockaddr_addr_equal  beacuse of lot of dependencies
+//-----------------------------------------------------------------------------------------------------------------------------------//
+
+unsafe extern "C" fn vsf_sysutil_sockaddr_is_ipv6(p_sockaddr: *const vsf_sysutil_sockaddr)-> c_int
+{
+  if (*p_sockaddr).u.u_sockaddr.sa_family == AF_INET6 as u16
+  {
+    return 1;
+  }
+  return 0;
+}
+
+unsafe extern "C" fn vsf_sysutil_sockaddr_set_ipv4addr(p_sockptr: *mut vsf_sysutil_sockaddr,
+                                  p_raw: *const c_char)
+{
+  if ((*p_sockptr).u.u_sockaddr.sa_family == AF_INET as u16)
+  {
+    vsf_sysutil_memcpy(&mut (*p_sockptr).u.u_sockaddr_in.sin_addr as &mut _ as *mut _ as *mut c_void, p_raw as *const _ as *const _ as *const c_void,
+                       size_of::<in_addr>() as u32);
+  }
+  else if ((*p_sockptr).u.u_sockaddr.sa_family == AF_INET6 as u16)
+  {
+    let mut s_p_sockaddr : *mut vsf_sysutil_sockaddr = ptr::null_mut();
+    vsf_sysutil_sockaddr_alloc_ipv4(&mut s_p_sockaddr);
+    vsf_sysutil_memcpy(&mut(*s_p_sockaddr).u.u_sockaddr_in.sin_addr as &mut _ as *mut _ as *mut c_void, p_raw as *const _ as *const _ as *const c_void,
+                       size_of::<in_addr>() as u32);
+    vsf_sysutil_memcpy(&mut (*p_sockptr).u.u_sockaddr_in6.sin6_addr as &mut _ as *mut _ as *mut c_void,
+                       vsf_sysutil_sockaddr_ipv4_v6(s_p_sockaddr),
+                       size_of::<in6_addr>() as u32);
+  }
+  else
+  {
+    bug(str_to_const_char("bad family"));
+  }
+}
