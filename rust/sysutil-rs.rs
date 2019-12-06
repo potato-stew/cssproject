@@ -351,10 +351,10 @@ unsafe extern "C" fn vsf_sysutil_read_loop(fd: c_int, p_buf: *mut c_void, mut si
     {
       die(str_to_const_char("retval too big in vsf_sysutil_read_loop\0"));
     }
-    let retval: c_int = retval.try_into().unwrap();
-    num_read += retval;
-    let retval: c_uint = retval.try_into().unwrap();
-    size = size - retval;
+    //let retval: c_int = retval.try_into().unwrap();
+    num_read = num_read + retval as i32;//.try_into().unwrap();
+    //let retval: c_uint = retval.try_into().unwrap();
+    size = size - retval;//.try_into().unwrap();
     if (size == 0)
     {
       /* Hit the read target, cool. */

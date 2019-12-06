@@ -28,7 +28,7 @@ RUST_OBJS = opts.o postlogin-rs.o sysutil-rs.o
 RUST_STDLIB_PATH =  $$RUST_STDLIB #/home/navdeep/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-fae576517123aa4e.so
 
 vsftpd: $(OBJS) $(RUST_OBJS)
-	clang -g -o vsftpd $(OBJS) $(RUST_OBJS) $(RUST_STDLIB_PATH) $(LINK) $(LDFLAGS) $(LIBS)
+	$(CC) -g -o vsftpd $(OBJS) $(RUST_OBJS) $(RUST_STDLIB_PATH) $(LINK) $(LDFLAGS) $(LIBS)
 
 $(RUST_OBJS):
 	$(RUSTC) $(RUST_FLAGS) rust/$*.rs -A warnings
