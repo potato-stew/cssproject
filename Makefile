@@ -3,16 +3,16 @@ CC 	=	gcc
 INSTALL	=	install
 IFLAGS  = -idirafter dummyinc
 #CFLAGS = -g
-CFLAGS	=	-O2 -fPIE -fstack-protector --param=ssp-buffer-size=4 \
+CFLAGS	=-g -O2 -fPIE -fstack-protector --param=ssp-buffer-size=4 \
 	-Wall -W -Wshadow -Werror -Wformat-security \
 	-D_FORTIFY_SOURCE=2 \
 #	-pedantic -Wconversion
 
 LIBS	=	`./vsf_findlibs.sh`
 LINK	=	-Wl,-s
-LDFLAGS	=	-fPIE -pie -Wl,-z,relro -Wl,-z,now
+LDFLAGS	=	-fPIE -pie -Wl,-z,relro -Wl,-z,now -Wl,-z,g
 
-OBJS	=	main.o utility.o prelogin.o ftpcmdio.o privsock.o \
+OBJS	=	main.o utility.o prelogin.o ftpcmdio.o privsock.o postlogin.o \
 		tunables.o ftpdataio.o secbuf.o ls.o \
 		postprivparent.o logging.o str.o netstr.o sysstr.o strlist.o \
     banner.o filestr.o parseconf.o secutil.o \
@@ -28,7 +28,7 @@ RUST_OBJS = opts.o postlogin-rs.o sysutil-rs.o
 RUST_STDLIB_PATH =  $$RUST_STDLIB #/home/navdeep/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-fae576517123aa4e.so
 
 vsftpd: $(OBJS) $(RUST_OBJS)
-	$(CC) -o vsftpd $(OBJS) $(RUST_OBJS) $(RUST_STDLIB_PATH) $(LINK) $(LDFLAGS) $(LIBS)
+	clang -g -o vsftpd $(OBJS) $(RUST_OBJS) $(RUST_STDLIB_PATH) $(LINK) $(LDFLAGS) $(LIBS)
 
 $(RUST_OBJS):
 	$(RUSTC) $(RUST_FLAGS) rust/$*.rs -A warnings

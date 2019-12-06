@@ -28,6 +28,8 @@
 #include "vsftpver.h"
 #include "opts.h"
 
+#define ONLY_ONE
+
 /* Private local functions */
 //static void handle_pwd(struct vsf_session* p_sess);
 //static void handle_cwd(struct vsf_session* p_sess);
@@ -123,7 +125,7 @@ extern void handle_eprt(struct vsf_session* p_sess);
 extern void get_unique_filename(struct mystr* p_outstr,
                                 const struct mystr* p_base);
 
-
+#ifdef ONLY_ONE
 void
 process_post_login(struct vsf_session* p_sess)
 {
@@ -508,6 +510,9 @@ process_post_login(struct vsf_session* p_sess)
   }
 }
 
+#endif
+
+#if 1==2
 static void
 handle_pwd(struct vsf_session* p_sess)
 {
@@ -2053,3 +2058,4 @@ handle_http(struct vsf_session* p_sess)
   }
   vsf_sysutil_exit(0);
 }
+#endif

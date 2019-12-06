@@ -35,7 +35,7 @@ unsafe extern "C" fn vsf_sysutil_common_sighandler(signum: c_int)
 {
     if signum < 0 || signum >= NSIG.try_into().unwrap()     
     {
-      /* "cannot happen" */
+      /* "cannot happen\0" */
       return;
     }
     match s_sig_details[signum as usize].sync_sig_handler {
@@ -60,11 +60,11 @@ unsafe extern "C" fn vsf_sysutil_common_sighandler(signum: c_int)
  * without us having to worry about re-entrancy.
  *
  * We guarantee that a handler for a given signal is not re-entrant. This
- * is taken care of by the "running" flag.
+ * is taken care of by the "running\0" flag.
  *
  * This call itself can only be re-entered once we dereference the actual
  * hander function pointer, so we are safe with respect to races modifying
- * the "running" flag.
+ * the "running\0" flag.
  */
 
 unsafe extern "C" fn vsf_sysutil_check_pending_actions(context: EVSFSysUtilInterruptContext, retval: c_int, fd: c_int)
@@ -128,11 +128,11 @@ unsafe extern "C" fn vsf_sysutil_translate_sig(sig: EVSFSysUtilSignal) -> u32
       realsig = SIGHUP,
       
     _ =>
-      unsafe { bug(str_to_const_char("unknown signal in vsf_sysutil_translate_sig")) },
+      unsafe { bug(str_to_const_char("unknown signal in vsf_sysutil_translate_sig\0")) },
   }
   if realsig < 0 || realsig >= NSIG
   {
-    unsafe {bug(str_to_const_char("signal out of range in vsf_sysutil_translate_sig")); }
+    unsafe {bug(str_to_const_char("signal out of range in vsf_sysutil_translate_sig\0")); }
   }
   return realsig;
 }
@@ -193,12 +193,12 @@ unsafe extern "C" fn vsf_sysutil_set_sighandler(sig: c_uint, p_handlefunc: Optio
   retval = sigfillset(&mut sigact.sa_mask);
   if retval != 0
   {
-    die(str_to_const_char("sigfillset"));
+    die(str_to_const_char("sigfillset\0"));
   }
   retval = sigaction(sig.try_into().unwrap(), &sigact, ptr::null_mut());
   if retval != 0
   {
-    die(str_to_const_char("sigaction"));
+    die(str_to_const_char("sigaction\0"));
   }
 }
 
@@ -211,17 +211,17 @@ unsafe extern "C" fn vsf_sysutil_block_sig(sig: EVSFSysUtilSignal)
   retval = sigemptyset(&mut sset);
   if retval != 0
   {
-    die(str_to_const_char("sigemptyset"));
+    die(str_to_const_char("sigemptyset\0"));
   }
   retval = sigaddset(&mut sset, realsig);
   if retval != 0
   {
-    die(str_to_const_char("sigaddset"));
+    die(str_to_const_char("sigaddset\0"));
   }
   retval = sigprocmask(SIG_BLOCK.try_into().unwrap(), & sset, ptr::null_mut());
   if retval != 0
   {
-    die(str_to_const_char("sigprocmask"));
+    die(str_to_const_char("sigprocmask\0"));
   }
 }
 
@@ -234,17 +234,17 @@ unsafe extern "C" fn vsf_sysutil_unblock_sig(sig: EVSFSysUtilSignal)
   retval = sigemptyset(&mut sset);
   if retval != 0
   {
-    die(str_to_const_char("sigemptyset"));
+    die(str_to_const_char("sigemptyset\0"));
   }
   retval = sigaddset(&mut sset, realsig);
   if retval != 0
   {
-    die(str_to_const_char("sigaddset"));
+    die(str_to_const_char("sigaddset\0"));
   }
   retval = sigprocmask(SIG_UNBLOCK.try_into().unwrap(), & sset, ptr::null_mut());
   if retval != 0
   {
-    die(str_to_const_char("sigprocmask"));
+    die(str_to_const_char("sigprocmask\0"));
   }
 }
 
@@ -254,7 +254,7 @@ unsafe extern "C" fn vsf_sysutil_install_io_handler(handler: vsf_context_io_t , 
   {
     None=> {},
     Some(x)=>{
-      bug(str_to_const_char("double register of i/o handler"));
+      bug(str_to_const_char("double register of i/o handler\0"));
     }
   }
   s_io_handler = handler;
@@ -267,7 +267,7 @@ unsafe extern "C" fn vsf_sysutil_uninstall_io_handler()
   {
     None=> {},
     Some(x)=>{
-    bug(str_to_const_char("no i/o handler to unregister!"));
+    bug(str_to_const_char("no i/o handler to unregister!\0"));
   }
 }
   s_io_handler = None;
@@ -332,7 +332,7 @@ unsafe extern "C" fn vsf_sysutil_read_loop(fd: c_int, p_buf: *mut c_void, mut si
   let mut num_read: c_int = 0;
   if size > WINT_MAX
   {
-    die(str_to_const_char("size too big in vsf_sysutil_read_loop"));
+    die(str_to_const_char("size too big in vsf_sysutil_read_loop\0"));
   }
   while true
   {
@@ -349,7 +349,7 @@ unsafe extern "C" fn vsf_sysutil_read_loop(fd: c_int, p_buf: *mut c_void, mut si
     let retval: c_uint = retval.try_into().unwrap();
     if retval > size
     {
-      die(str_to_const_char("retval too big in vsf_sysutil_read_loop"));
+      die(str_to_const_char("retval too big in vsf_sysutil_read_loop\0"));
     }
     let retval: c_int = retval.try_into().unwrap();
     num_read += retval;
@@ -370,7 +370,7 @@ unsafe extern "C" fn vsf_sysutil_write_loop(fd: c_int, p_buf: *mut c_void, mut s
   let mut num_written: c_int = 0;
   if size > WINT_MAX
   {
-    die(str_to_const_char("size too big in vsf_sysutil_write_loop"));
+    die(str_to_const_char("size too big in vsf_sysutil_write_loop\0"));
   }
   while true
   {
@@ -388,7 +388,7 @@ unsafe extern "C" fn vsf_sysutil_write_loop(fd: c_int, p_buf: *mut c_void, mut s
     let retval: c_uint = retval.try_into().unwrap();
     if retval > size
     {
-      die(str_to_const_char("retval too big in vsf_sysutil_write_loop"));
+      die(str_to_const_char("retval too big in vsf_sysutil_write_loop\0"));
     }
     let retval: c_int = retval.try_into().unwrap();
     num_written += retval;
@@ -408,7 +408,7 @@ unsafe extern "C" fn vsf_sysutil_get_file_offset(file_fd: c_int) -> filesize_t
   let mut retval: filesize_t = lseek(file_fd, 0, SEEK_CUR.try_into().unwrap());
   if (retval < 0)
   {
-    die(str_to_const_char("lseek"));
+    die(str_to_const_char("lseek\0"));
   }
   return retval;
 }
@@ -418,12 +418,12 @@ unsafe extern "C" fn vsf_sysutil_lseek_to(fd: c_int, seek_pos: filesize_t )
   let mut retval: filesize_t;
   if seek_pos < 0
   {
-    die(str_to_const_char("negative seek_pos in vsf_sysutil_lseek_to"));
+    die(str_to_const_char("negative seek_pos in vsf_sysutil_lseek_to\0"));
   }
   retval = lseek(fd, seek_pos, SEEK_SET.try_into().unwrap());
   if retval < 0
   {
-    die(str_to_const_char("lseek"));
+    die(str_to_const_char("lseek\0"));
   }
 }
 
@@ -433,7 +433,7 @@ unsafe extern "C" fn vsf_sysutil_lseek_end(fd: c_int)
   retval = lseek(fd, 0, SEEK_END.try_into().unwrap());
   if retval < 0
   {
-    die(str_to_const_char("lseek"));
+    die(str_to_const_char("lseek\0"));
   }
 }
 
@@ -444,12 +444,12 @@ unsafe extern "C" fn vsf_sysutil_malloc(size: c_uint) -> *mut c_void
   /* Paranoia - what if we got an integer overflow/underflow? */
   if size == 0 || size > WINT_MAX
   {
-    bug(str_to_const_char("zero or big size in vsf_sysutil_malloc"));
+    bug(str_to_const_char("zero or big size in vsf_sysutil_malloc\0"));
   }  
   p_ret = malloc(size as usize);
   if p_ret == ptr::null_mut()
   {
-    die(str_to_const_char("malloc"));
+    die(str_to_const_char("malloc\0"));
   }
   return p_ret;
 }
@@ -459,12 +459,12 @@ unsafe extern "C" fn vsf_sysutil_realloc(p_ptr: *mut c_void, size: c_uint)-> *mu
   let mut p_ret: *mut c_void;
   if size == 0 || size > WINT_MAX
   {
-    bug(str_to_const_char("zero or big size in vsf_sysutil_realloc"));
+    bug(str_to_const_char("zero or big size in vsf_sysutil_realloc\0"));
   }
   p_ret = realloc(p_ptr, size as usize);
   if p_ret == ptr::null_mut()
   {
-    die(str_to_const_char("realloc"));
+    die(str_to_const_char("realloc\0"));
   }
   return p_ret;
 }
@@ -473,7 +473,7 @@ unsafe extern "C" fn vsf_sysutil_free( p_ptr: *mut c_void)
 {
   if p_ptr == ptr::null_mut()
   {
-    bug(str_to_const_char("vsf_sysutil_free got a null pointer"));
+    bug(str_to_const_char("vsf_sysutil_free got a null pointer\0"));
   }
   free(p_ptr);
 }
@@ -493,7 +493,7 @@ unsafe extern "C" fn vsf_sysutil_fork() -> c_int
   let mut retval: c_int = vsf_sysutil_fork_failok();
   if retval < 0
   {
-    die(str_to_const_char("fork"));
+    die(str_to_const_char("fork\0"));
   }
   return retval;
 }
@@ -560,7 +560,7 @@ unsafe extern "C" fn vsf_sysutil_wait_reap_one() -> c_int
   }
   if (retval < 0)
   {
-    die(str_to_const_char("waitpid"));
+    die(str_to_const_char("waitpid\0"));
   }
   /* Got one */
   return retval;
@@ -582,7 +582,7 @@ unsafe extern "C" fn vsf_sysutil_wait_get_exitcode(p_waitret: *const vsf_sysutil
 let mut status: c_int;
   if vsf_sysutil_wait_exited_normally(p_waitret) != 0
   {
-    bug(str_to_const_char("not a normal exit in vsf_sysutil_wait_get_exitcode"));
+    bug(str_to_const_char("not a normal exit in vsf_sysutil_wait_get_exitcode\0"));
   }
   status = (*p_waitret).PRIVATE_HANDS_OFF_exit_status;
   return WEXITSTATUS(status);
@@ -595,7 +595,7 @@ unsafe extern "C" fn vsf_sysutil_activate_keepalive(fd: c_int)
   
   if retval != 0
   {
-    die(str_to_const_char("setsockopt: keepalive"));
+    die(str_to_const_char("setsockopt: keepalive\0"));
   }
 }
 
@@ -607,7 +607,7 @@ unsafe extern "C" fn vsf_sysutil_activate_reuseaddr(fd: c_int)
                           size_of::<c_int>().try_into().unwrap());
   if retval != 0
   {
-    die(str_to_const_char("setsockopt: reuseaddr"));
+    die(str_to_const_char("setsockopt: reuseaddr\0"));
   }
 }
 
@@ -618,7 +618,7 @@ unsafe extern "C" fn vsf_sysutil_set_nodelay(fd: c_int)
                           size_of::<c_int>().try_into().unwrap());
   if (retval != 0)
   {
-    die(str_to_const_char("setsockopt: nodelay"));
+    die(str_to_const_char("setsockopt: nodelay\0"));
   }
 }
 
@@ -627,7 +627,7 @@ unsafe extern "C" fn vsf_sysutil_activate_sigurg(fd: c_int)
   let mut retval: c_int = fcntl(fd, F_SETOWN.try_into().unwrap(), vsf_sysutil_getpid());
   if retval != 0
   {
-    die(str_to_const_char("fcntl"));
+    die(str_to_const_char("fcntl\0"));
   }
 }
 
@@ -638,7 +638,7 @@ unsafe extern "C" fn vsf_sysutil_activate_oobinline(fd: c_int)
                           size_of::<c_int>().try_into().unwrap());
   if retval != 0
   {
-    die(str_to_const_char("setsockopt: oobinline"));
+    die(str_to_const_char("setsockopt: oobinline\0"));
   }
 }
 
@@ -660,7 +660,7 @@ unsafe  extern "C" fn vsf_sysutil_activate_linger(fd: c_int)
                       size_of::<linger>().try_into().unwrap());
   if retval != 0
   {
-    die(str_to_const_char("setsockopt: linger"));
+    die(str_to_const_char("setsockopt: linger\0"));
   }
 }
 
@@ -678,13 +678,13 @@ unsafe extern "C" fn vsf_sysutil_activate_noblock(fd: c_int)
   let mut curr_flags: c_int = fcntl(fd, F_GETFL.try_into().unwrap());
   if vsf_sysutil_retval_is_error(curr_flags) != 0
   {
-    die(str_to_const_char("fcntl"));
+    die(str_to_const_char("fcntl\0"));
   }
   curr_flags = curr_flags | O_NONBLOCK;
   retval = fcntl(fd, F_SETFL.try_into().unwrap(), curr_flags);
   if retval != 0
   {
-    die(str_to_const_char("fcntl"));
+    die(str_to_const_char("fcntl\0"));
   }
 }
 
@@ -694,13 +694,13 @@ unsafe extern "C" fn vsf_sysutil_deactivate_noblock(fd: c_int)
   let mut curr_flags: c_int = fcntl(fd, F_GETFL.try_into().unwrap());
   if vsf_sysutil_retval_is_error(curr_flags) != 0
   {
-    die(str_to_const_char("fcntl"));
+    die(str_to_const_char("fcntl\0"));
   }
   curr_flags &= !O_NONBLOCK;
   retval = fcntl(fd, F_SETFL.try_into().unwrap(), curr_flags);
   if retval != 0
   {
-    die(str_to_const_char("fcntl"));
+    die(str_to_const_char("fcntl\0"));
   }
 }
 
@@ -758,7 +758,7 @@ unsafe extern "C" fn vsf_sysutil_a_to_filesize_t(p_str: *const c_char) -> filesi
 unsafe extern "C" fn vsf_sysutil_ulong_to_str(the_ulong: c_ulong) -> *const c_char
 {
   static mut ulong_buf: [c_char; 32]=[0;32];
-  snprintf(&mut ulong_buf[0], 32, str_to_const_char("%lu"), the_ulong);
+  snprintf(&mut ulong_buf[0], 32, str_to_const_char("%lu\0"), the_ulong);
   return &ulong_buf[0];
 }
 
@@ -768,12 +768,12 @@ unsafe extern "C" fn vsf_sysutil_filesize_t_to_str(the_filesize: filesize_t ) ->
   if (size_of::<c_long>() == 8)
   {
     /* Avoid using non-standard %ll if we can */
-    snprintf(&mut filesize_buf[0], 32, str_to_const_char( "%ld"),
+    snprintf(&mut filesize_buf[0], 32, str_to_const_char( "%ld\0"),
                     the_filesize as c_long);
   }
   else
   {
-    snprintf(&mut filesize_buf[0], 32, str_to_const_char("%lld"), the_filesize);
+    snprintf(&mut filesize_buf[0], 32, str_to_const_char("%lld\0"), the_filesize);
   }
   return &filesize_buf[0];
 }
@@ -781,7 +781,7 @@ unsafe extern "C" fn vsf_sysutil_filesize_t_to_str(the_filesize: filesize_t ) ->
 unsafe extern "C" fn vsf_sysutil_double_to_str(the_double: c_double) -> *const c_char
 {
   static mut double_buf: [c_char; 32]=[0;32];
-  snprintf(&mut double_buf[0], 32, str_to_const_char("%.2f"), the_double);
+  snprintf(&mut double_buf[0], 32, str_to_const_char("%.2f\0"), the_double);
   return &double_buf[0];
 }
 
@@ -795,7 +795,7 @@ unsafe extern "C" fn vsf_sysutil_uint_to_octal(the_uint: c_uint)-> *const c_char
   }
   else
   {
-    snprintf(&mut octal_buf[0], 32, str_to_const_char("0%o"), the_uint);
+    snprintf(&mut octal_buf[0], 32, str_to_const_char("0%o\0"), the_uint);
   }
   return &octal_buf[0];
 }
@@ -909,7 +909,7 @@ unsafe extern "C" fn sf_sysutil_closedir( p_dir: *mut vsf_sysutil_dir)
   let mut retval: c_int = closedir(p_real_dir);
   if retval != 0
   {
-    die(str_to_const_char("closedir"));
+    die(str_to_const_char("closedir\0"));
   }
 }
 
@@ -931,7 +931,7 @@ unsafe extern "C" fn vsf_sysutil_strlen(p_text: *const c_char) -> c_uint
   /* A defense in depth measure. */
   if ret > (WINT_MAX / 8).into()
   {
-    die(str_to_const_char("string suspiciously long"));
+    die(str_to_const_char("string suspiciously long\0"));
   }
   return ret as c_uint;
 }
@@ -962,7 +962,7 @@ unsafe extern "C" fn vsf_sysutil_memcpy(p_dest: *mut c_void, p_src:*const c_void
   /* Defense in depth */
   if size > WINT_MAX
   {
-    die(str_to_const_char("possible negative value to memcpy?"));
+    die(str_to_const_char("possible negative value to memcpy?\0"));
   }
   memcpy(p_dest, p_src, size as usize);
 }
@@ -990,7 +990,7 @@ unsafe extern "C" fn vsf_sysutil_getpagesize()-> c_uint
     s_page_size = getpagesize() as u32;
     if s_page_size == 0
     {
-      die(str_to_const_char("getpagesize"));
+      die(str_to_const_char("getpagesize\0"));
     }
   }
   return s_page_size;
@@ -1009,7 +1009,7 @@ unsafe extern "C" fn vsf_sysutil_translate_memprot(perm: EVSFSysUtilMapPermissio
       retval = PROT_NONE as i32,
       
     _ =>
-      bug(str_to_const_char("bad value in vsf_sysutil_translate_memprot")),
+      bug(str_to_const_char("bad value in vsf_sysutil_translate_memprot\0")),
   }
   return retval;
 }
@@ -1021,7 +1021,7 @@ unsafe extern "C" fn vsf_sysutil_memprotect(p_addr: *mut c_void, len: c_uint,
   let mut retval: c_int = mprotect(p_addr, len as usize, prot);
   if retval != 0
   {
-    die(str_to_const_char("mprotect"));
+    die(str_to_const_char("mprotect\0"));
   }
 }
 
@@ -1030,7 +1030,7 @@ unsafe extern "C" fn vsf_sysutil_memunmap(p_start: *mut c_void, length: c_uint)
   let mut retval:c_int = munmap(p_start, length as usize);
   if retval != 0
   {
-    die(str_to_const_char("munmap"));
+    die(str_to_const_char("munmap\0"));
   }
 }
 
@@ -1049,7 +1049,7 @@ unsafe extern "C" fn vsf_sysutil_translate_openmode(mode: EVSFSysUtilOpenMode) -
       retval = O_RDWR as i32,
       
     _=>
-      bug(str_to_const_char("bad mode in vsf_sysutil_translate_openmode")),
+      bug(str_to_const_char("bad mode in vsf_sysutil_translate_openmode\0")),
   }
   return retval;
 }
@@ -1088,7 +1088,7 @@ unsafe extern "C" fn vsf_sysutil_dupfd2(old_fd:c_int, new_fd:c_int)
   retval = dup2(old_fd, new_fd);
   if retval != new_fd
   {
-    die(str_to_const_char("dup2"));
+    die(str_to_const_char("dup2\0"));
   }
 }
 
@@ -1104,7 +1104,7 @@ unsafe extern "C" fn vsf_sysutil_close(fd: c_int)
         vsf_sysutil_check_pending_actions(EVSFSysUtilInterruptContext_kVSFSysUtilUnknown, 0, 0);
         continue;
       }
-      die(str_to_const_char("close"));
+      die(str_to_const_char("close\0"));
     }
     return;
   }
@@ -1141,7 +1141,7 @@ unsafe extern "C" fn vsf_sysutil_fstat(fd: c_int, p_ptr:*mut* mut vsf_sysutil_st
   retval = fstat(fd, (*p_ptr) as *mut stat);
   if retval != 0
   {
-    die(str_to_const_char("fstat"));
+    die(str_to_const_char("fstat\0"));
   }
 }
 
@@ -1236,7 +1236,7 @@ unsafe extern "C" fn vsf_sysutil_statbuf_get_date( p_statbuf: *const vsf_sysutil
   let mut retval:c_int;
   let mut p_tm: *mut tm ;
   let mut p_stat: *const stat = p_statbuf as *const stat;
-  let mut p_date_format: *const c_char = str_to_const_char("%b %d %H:%M");
+  let mut p_date_format: *const c_char = str_to_const_char("%b %d %H:%M\0");
   if use_localtime !=0 
   {
     p_tm = gmtime(&(*p_stat).st_mtim.tv_sec);
@@ -1249,13 +1249,13 @@ unsafe extern "C" fn vsf_sysutil_statbuf_get_date( p_statbuf: *const vsf_sysutil
   if (*p_stat).st_mtim.tv_sec > curr_time ||
       (curr_time - (*p_stat).st_mtim.tv_sec) > 60*60*24*182
   {
-    p_date_format = str_to_const_char("%b %d  %Y");
+    p_date_format = str_to_const_char("%b %d  %Y\0");
   }
   retval = strftime(&mut datebuf[0], 64, p_date_format, p_tm).try_into().unwrap();
   datebuf[64-1] = '\0' as c_char ;
   if retval == 0
   {
-    die(str_to_const_char("strftime"));
+    die(str_to_const_char("strftime\0"));
   }
   return &datebuf[0];
 }
@@ -1276,10 +1276,10 @@ unsafe extern "C" fn vsf_sysutil_statbuf_get_numeric_date (
   {
     p_tm = localtime(&(*p_stat).st_mtim.tv_sec);
   }
-  retval = strftime(&mut datebuf[0], 15, str_to_const_char("%Y%m%d%H%M%S"), p_tm).try_into().unwrap();
+  retval = strftime(&mut datebuf[0], 15, str_to_const_char("%Y%m%d%H%M%S\0"), p_tm).try_into().unwrap();
   if (retval == 0)
   {
-    die(str_to_const_char("strftime"));
+    die(str_to_const_char("strftime\0"));
   }
   return &datebuf[0];
 }
@@ -1289,7 +1289,7 @@ unsafe extern "C" fn vsf_sysutil_statbuf_get_size(p_statbuf: *const vsf_sysutil_
   let mut p_stat: *const stat = p_statbuf as *const stat;
   if (*p_stat).st_size < 0
   {
-    die(str_to_const_char("invalid inode size in vsf_sysutil_statbuf_get_size"));
+    die(str_to_const_char("invalid inode size in vsf_sysutil_statbuf_get_size\0"));
   }
   return (*p_stat).st_size;
 }
@@ -1331,7 +1331,7 @@ unsafe extern "C" fn vsf_sysutil_statbuf_get_sortkey_mtime(
    * more recent dates appear later in the alphabet! Most notably, we must
    * make sure we pad to the same length with 0's 
    */
-  snprintf(&mut intbuf[0], 32, str_to_const_char("%030ld") , (*p_stat).st_mtim.tv_sec);
+  snprintf(&mut intbuf[0], 32, str_to_const_char("%030ld\0") , (*p_stat).st_mtim.tv_sec);
   return &intbuf[0];
 }
 
@@ -1339,7 +1339,7 @@ unsafe extern "C" fn vsf_sysutil_fchown(fd: c_int, uid:c_int, gid: c_int)
 {
   if fchown(fd, uid as u32, gid as u32) != 0
   {
-    die(str_to_const_char("fchown"));
+    die(str_to_const_char("fchown\0"));
   }
 }
 
@@ -1348,13 +1348,13 @@ unsafe extern "C" fn  vsf_sysutil_fchmod( fd:c_int, mut mode: c_uint)
   mode = mode & 0777;
   if fchmod(fd, mode)!=0
   {
-    die(str_to_const_char("fchmod"));
+    die(str_to_const_char("fchmod\0"));
   }
 }
 
 unsafe extern "C" fn vsf_sysutil_chmod(p_filename: *const c_char, mut mode: c_uint) -> c_int
 {
-  /* Safety: mask "mode" to just access permissions, e.g. no suid setting! */
+  /* Safety: mask "mode\0" to just access permissions, e.g. no suid setting! */
   mode = mode & 0777;
   return chmod(p_filename, mode);
 }
@@ -1404,7 +1404,7 @@ unsafe extern "C" fn vsf_sysutil_unlock_file(fd: c_int)
   retval = fcntl(fd, F_SETLK as i32, &the_lock);
   if retval != 0
   {
-    die(str_to_const_char("fcntl"));
+    die(str_to_const_char("fcntl\0"));
   }
 }
 
@@ -1469,7 +1469,7 @@ unsafe extern "C" fn vsf_sysutil_get_ipv4_sock()-> c_int
   let mut retval:c_int = socket(PF_INET as i32, __socket_type_SOCK_STREAM as i32, IPPROTO_TCP as i32);
   if retval < 0
   {
-    die(str_to_const_char("socket"));
+    die(str_to_const_char("socket\0"));
   }
   return retval;
 }
@@ -1479,7 +1479,7 @@ unsafe extern "C" fn vsf_sysutil_get_ipv6_sock()-> c_int
   let mut retval: c_int = socket(PF_INET6 as i32, __socket_type_SOCK_STREAM as i32, IPPROTO_TCP as i32);
   if retval < 0
   {
-    die(str_to_const_char("socket"));
+    die(str_to_const_char("socket\0"));
   }
   return retval;
 }
@@ -1491,7 +1491,7 @@ unsafe extern "C" fn vsf_sysutil_unix_stream_socketpair()-> vsf_sysutil_socketpa
   let mut sys_retval: c_int = socketpair(PF_UNIX as i32, __socket_type_SOCK_STREAM as i32, 0, &mut the_sockets[0]);
   if sys_retval != 0
   {
-    die(str_to_const_char("socketpair"));
+    die(str_to_const_char("socketpair\0"));
   }
   retval.socket_one = the_sockets[0];
   retval.socket_two = the_sockets[1];
@@ -1512,7 +1512,7 @@ unsafe extern "C" fn vsf_sysutil_bind(fd: c_int, p_sockptr: *const vsf_sysutil_s
   }
   else
   {
-    die(str_to_const_char("can only support ipv4 and ipv6 currently"));
+    die(str_to_const_char("can only support ipv4 and ipv6 currently\0"));
   }
   return bind(fd, p_sockaddr, len as u32);
 }
@@ -1523,7 +1523,7 @@ unsafe extern "C" fn vsf_sysutil_listen(fd: c_int, backlog: c_int)-> c_int
   if (vsf_sysutil_retval_is_error(retval) != 0  &&
       vsf_sysutil_get_error() != EVSFSysUtilError_kVSFSysUtilErrADDRINUSE)
   {
-    die(str_to_const_char("listen"));
+    die(str_to_const_char("listen\0"));
   }
   return retval;
 }
@@ -1540,12 +1540,12 @@ unsafe extern "C" fn vsf_sysutil_getsockname(fd:c_int, p_sockptr:*mut*mut vsf_sy
   retval = getsockname(fd, &mut(the_addr.u_sockaddr), &mut socklen);
   if retval != 0
   {
-    die(str_to_const_char("getsockname"));
+    die(str_to_const_char("getsockname\0"));
   }
   if (the_addr.u_sockaddr.sa_family != AF_INET as u16 &&
       the_addr.u_sockaddr.sa_family != AF_INET6 as u16)
   {
-    die(str_to_const_char("can only support ipv4 and ipv6 currently"));
+    die(str_to_const_char("can only support ipv4 and ipv6 currently\0"));
   }
   vsf_sysutil_sockaddr_alloc(p_sockptr);
   if (socklen > size_of::<vsf_sysutil_sockaddr__bindgen_ty_1>() as u32)
@@ -1565,12 +1565,12 @@ unsafe extern "C" fn  Evsf_sysutil_getpeername(fd:c_int, p_sockptr:*mut*mut vsf_
   retval = getpeername(fd, &mut the_addr.u_sockaddr, &mut socklen);
   if retval != 0
   {
-    die(str_to_const_char("getpeername"));
+    die(str_to_const_char("getpeername\0"));
   }
   if (the_addr.u_sockaddr.sa_family != AF_INET as u16 &&
       the_addr.u_sockaddr.sa_family != AF_INET6 as u16)
   {
-    die(str_to_const_char("can only support ipv4 and ipv6 currently"));
+    die(str_to_const_char("can only support ipv4 and ipv6 currently\0"));
   }
   vsf_sysutil_sockaddr_alloc(p_sockptr);
   if (socklen > size_of::<vsf_sysutil_sockaddr__bindgen_ty_1>() as u32)
@@ -1650,7 +1650,7 @@ unsafe extern "C" fn fnvsf_sysutil_sockaddr_clone(p_sockptr:*mut*mut vsf_sysutil
   }
   else
   {
-    die(str_to_const_char("can only support ipv4 and ipv6 currently"));
+    die(str_to_const_char("can only support ipv4 and ipv6 currently\0"));
   }
 }
 
@@ -1688,6 +1688,6 @@ unsafe extern "C" fn vsf_sysutil_sockaddr_set_ipv4addr(p_sockptr: *mut vsf_sysut
   }
   else
   {
-    bug(str_to_const_char("bad family"));
+    bug(str_to_const_char("bad family\0"));
   }
 }

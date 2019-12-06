@@ -21,7 +21,8 @@ extern "C"  {
 }
 
 pub fn str_to_const_char (s: &str) -> *const c_char {
-  return CString::new(s).unwrap().as_ptr();
+  return s.as_bytes().as_ptr() as *const _ as *const c_char;
+//  return CString::new(s).unwrap().as_ptr();
  }
 
 
@@ -3179,9 +3180,17 @@ pub fn vsf_cmdio_sock_setup () ;
 }
  extern "C" {
 //# [link_name = "\u{1}_Z15vsf_cmdio_writeP11vsf_sessioniPKc"] 
-pub fn vsf_cmdio_write (p_sess : &vsf_session , status : :: std :: os :: raw :: c_int , p_text : * const :: std :: os :: raw :: c_char) ;
+pub fn vsf_cmdio_write (p_sess : *const vsf_session , status : :: std :: os :: raw :: c_int , p_text : * const :: std :: os :: raw :: c_char) ;
 
 }
+
+/*pub fn vsf_cmdio_write_rust (p_sess : *mut vsf_session , status : :: std :: os :: raw :: c_int , p_text : * const :: std :: os :: raw :: c_char) {
+//	vsf_cmdio_write(p_sess as *const _  as & _ as &vsf_session ,status,p_text);
+    if p_sess != ptr::null_mut() {
+	vsf_cmdio_write(p_sess as *const _  as & _ as &vsf_session ,status,p_text);    	
+    }
+}
+*/
  extern "C" {
 //# [link_name = "\u{1}_Z22vsf_cmdio_write_hyphenP11vsf_sessioniPKc"] 
 pub fn vsf_cmdio_write_hyphen (p_sess : &vsf_session , status : :: std :: os :: raw :: c_int , p_text : * const :: std :: os :: raw :: c_char) ;

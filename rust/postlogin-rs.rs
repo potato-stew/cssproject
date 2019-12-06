@@ -7,6 +7,8 @@ use std::convert::TryInto;
 
 use bindings_new::*;
 
+const postlogin_debug : bool = false;
+
 fn default_mystr() -> mystr {
   mystr { p_buf: ptr::null_mut(), alloc_bytes:0, len:0 }
 }
@@ -39,7 +41,7 @@ unsafe extern "C" fn handle_rnfr (p_sess: &vsf_session) {
     vsf_log_start_entry(p_sess, EVSFLogEntryType_kVSFLogEntryRename);
     str_copy(&p_sess.log_str, &p_sess.ftp_arg_str);
     prepend_path_to_filename(&p_sess.log_str);
-    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0"));
     return;
    }
 
@@ -49,14 +51,14 @@ unsafe extern "C" fn handle_rnfr (p_sess: &vsf_session) {
    {
     // Yes
     str_copy(&p_sess.rnfr_filename_str, &p_sess.ftp_arg_str);
-    vsf_cmdio_write(p_sess, FTP_RNFROK, str_to_const_char("Ready for RNTO."));
+    vsf_cmdio_write(p_sess, FTP_RNFROK, str_to_const_char("Ready for RNTO.\0"));
    }
   else
    {
     vsf_log_start_entry(p_sess, EVSFLogEntryType_kVSFLogEntryRename);
     str_copy(&p_sess.log_str, &p_sess.ftp_arg_str);
     prepend_path_to_filename(&p_sess.log_str);
-    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("RNFR command failed."));
+    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("RNFR command failed.\0"));
    }
 
 }
@@ -74,9 +76,9 @@ unsafe extern "C" fn handle_rest (p_sess: &mut vsf_session) {
    }
 
   p_sess.restart_pos = val;
-  str_alloc_text(&s_rest_str, str_to_const_char("Restart position accepted ("));
+  str_alloc_text(&s_rest_str, str_to_const_char("Restart position accepted (\0"));
   str_append_filesize_t(&s_rest_str, val);
-  str_append_text(&s_rest_str, str_to_const_char(")."));
+  str_append_text(&s_rest_str, str_to_const_char(").\0"));
   vsf_cmdio_write_str(p_sess, FTP_RESTOK, &s_rest_str);
 }
 
@@ -91,31 +93,31 @@ unsafe extern "C" fn handle_dele (p_sess: &vsf_session) {
 
   if 0 == vsf_access_check_file(&p_sess.ftp_arg_str)
    {
-    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0"));
     return;
    }
 
   retval = str_unlink(&p_sess.ftp_arg_str);
   if retval != 0
    {
-    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Delete operation failed."));
+    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Delete operation failed.\0"));
    }
   else
    {
     vsf_log_do_log(p_sess, 1);
-    vsf_cmdio_write(p_sess, FTP_DELEOK, str_to_const_char("Delete operation successful."));
+    vsf_cmdio_write(p_sess, FTP_DELEOK, str_to_const_char("Delete operation successful.\0"));
    }
 
 }
 
 #[no_mangle]
 unsafe extern "C" fn handle_help (p_sess: &vsf_session) {
-  vsf_cmdio_write_hyphen(p_sess, FTP_HELP,str_to_const_char("The following commands are recognized."));
-  vsf_cmdio_write_raw(p_sess,str_to_const_char(" ABOR ACCT ALLO APPE CDUP CWD  DELE EPRT EPSV FEAT HELP LIST MDTM MKD\r\n"));
-  vsf_cmdio_write_raw(p_sess,str_to_const_char(" MODE NLST NOOP OPTS PASS PASV PORT PWD  QUIT REIN REST RETR RMD  RNFR\r\n"));
-  vsf_cmdio_write_raw(p_sess,str_to_const_char(" RNTO SITE SIZE SMNT STAT STOR STOU STRU SYST TYPE USER XCUP XCWD XMKD\r\n"));
-  vsf_cmdio_write_raw(p_sess,str_to_const_char(" XPWD XRMD\r\n"));
-  vsf_cmdio_write(p_sess, FTP_HELP, str_to_const_char("Help OK."));
+  vsf_cmdio_write_hyphen(p_sess, FTP_HELP,str_to_const_char("The following commands are recognized.\0"));
+  vsf_cmdio_write_raw(p_sess,str_to_const_char(" ABOR ACCT ALLO APPE CDUP CWD  DELE EPRT EPSV FEAT HELP LIST MDTM MKD\r\n\0"));
+  vsf_cmdio_write_raw(p_sess,str_to_const_char(" MODE NLST NOOP OPTS PASS PASV PORT PWD  QUIT REIN REST RETR RMD  RNFR\r\n\0"));
+  vsf_cmdio_write_raw(p_sess,str_to_const_char(" RNTO SITE SIZE SMNT STAT STOR STOU STRU SYST TYPE USER XCUP XCWD XMKD\r\n\0"));
+  vsf_cmdio_write_raw(p_sess,str_to_const_char(" XPWD XRMD\r\n\0"));
+  vsf_cmdio_write(p_sess, FTP_HELP, str_to_const_char("Help OK.\0"));
 }
 
 /*
@@ -134,7 +136,7 @@ unsafe extern "C" fn handle_port (p_sess: &vsf_session) {
 
   if p_raw == ptr::null_mut()
    {
-    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Illegal PORT command."));
+    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Illegal PORT command.\0"));
     return;
    }
 
@@ -156,14 +158,14 @@ unsafe extern "C" fn handle_port (p_sess: &vsf_session) {
     if 0 == vsf_sysutil_sockaddr_addr_equal(p_sess.p_remote_addr,p_sess.p_port_sockaddr) ||
        0 != vsf_sysutil_is_port_reserved(the_port)
      {
-      vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Illegal PORT command."));
+      vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Illegal PORT command.\0"));
       port_cleanup(p_sess);
       return;
      }
    }
 
   vsf_cmdio_write(p_sess, FTP_PORTOK,
-                  str_to_const_char("PORT command successful. Consider using PASV."));
+                  str_to_const_char("PORT command successful. Consider using PASV.\0"));
 
 }
 */
@@ -180,7 +182,7 @@ unsafe extern "C" fn handle_rmd (p_sess: &vsf_session) {
 
   if 0 == vsf_access_check_file(&p_sess.ftp_arg_str)
    {
-    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0"));
     return;
    }
 
@@ -188,13 +190,13 @@ unsafe extern "C" fn handle_rmd (p_sess: &vsf_session) {
   if retval != 0
    {
     vsf_cmdio_write(p_sess, FTP_FILEFAIL,
-                    str_to_const_char("Remove directory operation failed."));
+                    str_to_const_char("Remove directory operation failed.\0"));
    }
   else
    {
     vsf_log_do_log(p_sess, 1);
     vsf_cmdio_write(p_sess, FTP_RMDIROK,
-                    str_to_const_char("Remove directory operation successful."));
+                    str_to_const_char("Remove directory operation successful.\0"));
    }
 
 }
@@ -210,7 +212,7 @@ unsafe extern "C" fn handle_mkd (p_sess: &vsf_session) {
 
   if 0 == vsf_access_check_file(&p_sess.ftp_arg_str)
    {
-    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0"));
     return;
    }
 
@@ -219,7 +221,7 @@ unsafe extern "C" fn handle_mkd (p_sess: &vsf_session) {
   if retval != 0
   {
     vsf_cmdio_write(p_sess, FTP_FILEFAIL,
-                    str_to_const_char("Create directory operation failed."));
+                    str_to_const_char("Create directory operation failed.\0"));
     return;
   }
   vsf_log_do_log(p_sess, 1);
@@ -233,112 +235,146 @@ unsafe extern "C" fn handle_mkd (p_sess: &vsf_session) {
     str_copy(&s_tmp_str, &p_sess.ftp_arg_str);
     prepend_path_to_filename(&s_tmp_str);
     // Double up double quotes
-    str_replace_text(&s_tmp_str, str_to_const_char("\""), str_to_const_char("\"\""));
+    str_replace_text(&s_tmp_str, str_to_const_char("\""), str_to_const_char("\"\"\0"));
     // Build result string
-    str_alloc_text(&s_mkd_res, str_to_const_char("\""));
+    str_alloc_text(&s_mkd_res, str_to_const_char("\"\0"));
     str_append_str(&s_mkd_res, &s_tmp_str);
-    str_append_text(&s_mkd_res, str_to_const_char("\" created"));
+    str_append_text(&s_mkd_res, str_to_const_char("\" created\0"));
     vsf_cmdio_write_str(p_sess, FTP_MKDIROK, &s_mkd_res);
    }
 
+}
+
+unsafe fn print_char_array_len (a: *const i8, len: u32) {
+
+  print!("\"\0");
+  for i in 0..len{
+    print!("{:#?}\0",*a.offset(i.try_into().unwrap()));
+  }
+  print!("\"\0");
+
+}
+
+unsafe fn print_char_array (a: *const i8) {
+
+  print!("\"\0");
+
+  let mut i=0;
+  while a.offset(i) != ptr::null_mut() {
+    print!("{:#?}\0",*a.offset(i.try_into().unwrap()));
+    i = i +1;
+  }
+
+  print!("\"\0");
 }
 
 #[no_mangle]
 unsafe extern "C" fn handle_type (p_sess: &mut vsf_session) {
 
   str_upper(&p_sess.ftp_arg_str);
-  if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("I"  )) ||
-     0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("L8" )) ||
-     0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("L 8"))
+  let cmp = str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("I\0"));
+
+/*
+  print!("handle_type: cmp={} I:\0",cmp);
+  print_char_array(str_to_const_char("I\0"));
+  print!(" arg_str:\0");
+  print_char_array_len(p_sess.ftp_arg_str.p_buf,p_sess.ftp_arg_str.len);
+  println!("\0");
+*/
+
+  if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("I\0"  )) ||
+     0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("I\0" )) ||
+     0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("L8\0" )) ||
+     0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("L 8\0"))
    {
     p_sess.is_ascii = 0;
-    vsf_cmdio_write(p_sess, FTP_TYPEOK, str_to_const_char("Switching to Binary mode."));
+    vsf_cmdio_write(p_sess, FTP_TYPEOK, str_to_const_char("Switching to Binary mode.\0"));
    }
-  else if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("A"  )) ||
-          0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("A N"))
+  else if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("A\0"  )) ||
+          0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("A N\0"))
    {
     p_sess.is_ascii = 1;
-    vsf_cmdio_write(p_sess, FTP_TYPEOK, str_to_const_char("Switching to ASCII mode."));
+    vsf_cmdio_write(p_sess, FTP_TYPEOK, str_to_const_char("Switching to ASCII mode.\0"));
    }
   else
    {
-    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Unrecognised TYPE command."));
+    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Unrecognised TYPE command.\0"));
    }
 }
 
 #[no_mangle]
 unsafe extern "C" fn handle_stat (p_sess: &vsf_session) {
-  vsf_cmdio_write_hyphen(p_sess, FTP_STATOK, str_to_const_char("FTP server status:"));
-  vsf_cmdio_write_raw(p_sess, str_to_const_char("     Connected to "));
+  vsf_cmdio_write_hyphen(p_sess, FTP_STATOK, str_to_const_char("FTP server status:\0"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("     Connected to \0"));
   vsf_cmdio_write_raw(p_sess, str_getbuf(&p_sess.remote_ip_str));
-  vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n"));
-  vsf_cmdio_write_raw(p_sess, str_to_const_char("     Logged in as "));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n\0"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("     Logged in as \0"));
   vsf_cmdio_write_raw(p_sess, str_getbuf(&p_sess.user_str));
-  vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n"));
-  vsf_cmdio_write_raw(p_sess, str_to_const_char("     TYPE: "));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n\0"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("     TYPE: \0"));
 
   if 0 != p_sess.is_ascii
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("ASCII\r\n"));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("ASCII\r\n\0"));
    }
   else
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("BINARY\r\n"));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("BINARY\r\n\0"));
    }
 
   if p_sess.bw_rate_max == 0
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("     No session bandwidth limit\r\n"));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     No session bandwidth limit\r\n\0"));
    }
   else
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Session bandwidth limit in byte/s is "));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Session bandwidth limit in byte/s is \0"));
     vsf_cmdio_write_raw(p_sess, vsf_sysutil_ulong_to_str(p_sess.bw_rate_max.into()));
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n"));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n\0"));
    }
 
   if tunable_idle_session_timeout == 0
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("     No session timeout\r\n"));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     No session timeout\r\n\0"));
    }
   else
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Session timeout in seconds is "));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Session timeout in seconds is \0"));
     vsf_cmdio_write_raw(p_sess,
       vsf_sysutil_ulong_to_str(tunable_idle_session_timeout.into()));
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n"));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n\0"));
    }
 
   if 0 != p_sess.control_use_ssl
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Control connection is encrypted\r\n")); 
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Control connection is encrypted\r\n\0")); 
    }
   else
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Control connection is plain text\r\n")); 
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Control connection is plain text\r\n\0")); 
    }
 
   if 0 != p_sess.data_use_ssl
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Data connections will be encrypted\r\n")); 
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Data connections will be encrypted\r\n\0")); 
    }
   else
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Data connections will be plain text\r\n"));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     Data connections will be plain text\r\n\0"));
    }
 
   if p_sess.num_clients > 0
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("     At session startup, client count was "));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("     At session startup, client count was \0"));
     vsf_cmdio_write_raw(p_sess, vsf_sysutil_ulong_to_str(p_sess.num_clients.into()));
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n"));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n\0"));
    }
 
-  vsf_cmdio_write_raw(p_sess,str_to_const_char("     vsFTPd "));
+  vsf_cmdio_write_raw(p_sess,str_to_const_char("     vsFTPd \0"));
   vsf_cmdio_write_raw(p_sess,str_to_const_char(VSF_VERSION));
-  vsf_cmdio_write_raw(p_sess,str_to_const_char(" - secure, fast, stable\r\n"));
-//  str_to_const_char("     vsFTPd " VSF_VERSION " - secure, fast, stable\r\n"));
-  vsf_cmdio_write(p_sess, FTP_STATOK, str_to_const_char("End of status"));
+  vsf_cmdio_write_raw(p_sess,str_to_const_char(" - secure, fast, stable\r\n\0"));
+//  str_to_const_char("     vsFTPd " VSF_VERSION " - secure, fast, stable\r\n\0"));
+  vsf_cmdio_write(p_sess, FTP_STATOK, str_to_const_char("End of status\0"));
 }
 
 #[no_mangle]
@@ -355,7 +391,7 @@ unsafe extern "C" fn handle_http (p_sess: &mut vsf_session) {
 
   if 0 == tunable_download_enable
    {
-    bug(str_to_const_char("HTTP needs download - fix your config"));
+    bug(str_to_const_char("HTTP needs download - fix your config\0"));
    }
 
   // Eat the HTTP headers, which we don't care about.
@@ -371,27 +407,27 @@ unsafe extern "C" fn handle_http (p_sess: &mut vsf_session) {
       }
    }
 
-  vsf_cmdio_write_raw(p_sess, str_to_const_char("HTTP/1.1 200 OK\r\n"));
-  vsf_cmdio_write_raw(p_sess, str_to_const_char("Server: vsftpd\r\n"));
-  vsf_cmdio_write_raw(p_sess, str_to_const_char("Connection: close\r\n"));
-  vsf_cmdio_write_raw(p_sess, str_to_const_char("X-Frame-Options: SAMEORIGIN\r\n"));
-  vsf_cmdio_write_raw(p_sess, str_to_const_char("X-Content-Type-Options: nosniff\r\n"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("HTTP/1.1 200 OK\r\n\0"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("Server: vsftpd\r\n\0"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("Connection: close\r\n\0"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("X-Frame-Options: SAMEORIGIN\r\n\0"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("X-Content-Type-Options: nosniff\r\n\0"));
   // Split the path from the HTTP/1.x
   str_split_char(&p_sess.http_get_arg, &p_sess.ftp_arg_str, ' ' as c_char);
   str_copy(&p_sess.ftp_arg_str, &p_sess.http_get_arg);
   str_split_char(&p_sess.http_get_arg, &p_sess.ftp_cmd_str, '.'  as c_char);
   str_upper(&p_sess.ftp_cmd_str);
-  if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("HTML")) ||
-     0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("HTM" ))
+  if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("HTML\0")) ||
+     0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("HTM\0" ))
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("Content-Type: text/html\r\n"));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("Content-Type: text/html\r\n\0"));
    }
   else
    {
-    vsf_cmdio_write_raw(p_sess, str_to_const_char("Content-Type: dunno\r\n"));
+    vsf_cmdio_write_raw(p_sess, str_to_const_char("Content-Type: dunno\r\n\0"));
    }
 
-  vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n"));
+  vsf_cmdio_write_raw(p_sess, str_to_const_char("\r\n\0"));
   p_sess.is_ascii = 0;
   p_sess.restart_pos = 0;
   handle_retr(p_sess, 1);
@@ -472,7 +508,7 @@ unsafe extern "C" fn handle_sigurg (p_private: *mut c_void) {
     str_right(&async_cmd_str, &real_cmd_str, len - 4);
    }
 
-  if 0 != str_equal_text(&real_cmd_str, str_to_const_char("ABOR"))
+  if 0 != str_equal_text(&real_cmd_str, str_to_const_char("ABOR\0"))
    {
     (*p_sess).abor_received = 1;
     // This is failok because of a small race condition; the SIGURG might
@@ -483,7 +519,7 @@ unsafe extern "C" fn handle_sigurg (p_private: *mut c_void) {
   else
    {
     // Sorry!
-    vsf_cmdio_write(&(*p_sess), FTP_BADCMD, str_to_const_char("Unknown command."));
+    vsf_cmdio_write(&(*p_sess), FTP_BADCMD, str_to_const_char("Unknown command.\0"));
    }
 
   str_free(&async_cmd_str);
@@ -500,10 +536,10 @@ extern "C" fn handle_pwd (p_sess: &mut vsf_session) {
     str_getcwd(&s_cwd_buf_mangle_str);
 
     /* Double up any double-quotes in the pathname! */
-	  str_replace_text(&s_cwd_buf_mangle_str, str_to_const_char("\""), str_to_const_char("\"\"") );
-    str_alloc_text(&s_pwd_res_str, str_to_const_char("\"") );
+	  str_replace_text(&s_cwd_buf_mangle_str, str_to_const_char("\""), str_to_const_char("\"\"\0") );
+    str_alloc_text(&s_pwd_res_str, str_to_const_char("\"\0") );
     str_append_str(&s_pwd_res_str, &s_cwd_buf_mangle_str);
-    str_append_text(&s_pwd_res_str, str_to_const_char("\" is the current directory") );
+    str_append_text(&s_pwd_res_str, str_to_const_char("\" is the current directory\0") );
     vsf_cmdio_write_str(p_sess, FTP_PWDOK, &s_pwd_res_str);
 
 	}
@@ -516,7 +552,7 @@ extern "C" fn handle_cwd (p_sess: &mut vsf_session) {
   resolve_tilde(&p_sess.ftp_arg_str, p_sess);
   if  0 == vsf_access_check_file(&p_sess.ftp_arg_str) 
   {
-    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.") );
+    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0") );
     return;
   }
 
@@ -525,11 +561,11 @@ extern "C" fn handle_cwd (p_sess: &mut vsf_session) {
   {
     /* Handle any messages */
     vsf_banner_dir_changed(p_sess, FTP_CWDOK);
-    vsf_cmdio_write(p_sess, FTP_CWDOK, str_to_const_char("Directory successfully changed.") );
+    vsf_cmdio_write(p_sess, FTP_CWDOK, str_to_const_char("Directory successfully changed.\0") );
   }
   else
   {
-    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Failed to change directory.") );
+    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Failed to change directory.\0") );
   }
 
  }
@@ -547,21 +583,23 @@ unsafe extern "C" fn handle_pasv (p_sess: &mut vsf_session,is_epsv: c_int) {
 
   let mut is_ipv6: c_int = vsf_sysutil_sockaddr_is_ipv6(p_sess.p_local_addr);
 
+  let cmp = str_isempty(&p_sess.ftp_arg_str);
+  println!("cmp={}",cmp);
   if 0 != is_epsv && 0 == str_isempty(&p_sess.ftp_arg_str)
    {
     let mut argval: c_int;
     str_upper(&p_sess.ftp_arg_str);
-    if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("ALL"))
+    if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("ALL\0"))
      {
       p_sess.epsv_all = 1;
-      vsf_cmdio_write(p_sess, FTP_EPSVALLOK, str_to_const_char("EPSV ALL ok.") );
+      vsf_cmdio_write(p_sess, FTP_EPSVALLOK, str_to_const_char("EPSV ALL ok.\0") );
       return;
      }
 
     argval = vsf_sysutil_atoi(str_getbuf(&p_sess.ftp_arg_str));
     if argval < 1 || argval > 2 || ( 0 == is_ipv6 && argval == 2 )
      {
-      vsf_cmdio_write(p_sess, FTP_EPSVBAD, str_to_const_char("Bad network protocol.") );
+      vsf_cmdio_write(p_sess, FTP_EPSVBAD, str_to_const_char("Bad network protocol.\0") );
       return;
      }
    }
@@ -579,9 +617,9 @@ unsafe extern "C" fn handle_pasv (p_sess: &mut vsf_session,is_epsv: c_int) {
 
   if 0 != is_epsv
    {
-    str_alloc_text(&s_pasv_res_str, str_to_const_char("Entering Extended Passive Mode (|||") );
+    str_alloc_text(&s_pasv_res_str, str_to_const_char("Entering Extended Passive Mode (|||\0") );
     str_append_ulong(&s_pasv_res_str, the_port.into() );
-    str_append_text(&s_pasv_res_str, str_to_const_char("|)") );
+    str_append_text(&s_pasv_res_str, str_to_const_char("|)\0") );
     vsf_cmdio_write_str(p_sess, FTP_EPSVOK, &s_pasv_res_str);
     return;
    }
@@ -592,7 +630,7 @@ unsafe extern "C" fn handle_pasv (p_sess: &mut vsf_session,is_epsv: c_int) {
     // Report passive address as specified in configuration
     if vsf_sysutil_inet_aton(tunable_pasv_address, &s_p_sockaddr) == 0
      {
-      die( str_to_const_char("invalid pasv_address") );
+      die( str_to_const_char("invalid pasv_address\0") );
      }
    }
   else
@@ -600,7 +638,7 @@ unsafe extern "C" fn handle_pasv (p_sess: &mut vsf_session,is_epsv: c_int) {
     vsf_sysutil_sockaddr_clone(&&s_p_sockaddr, p_sess.p_local_addr);
    }
 
-  str_alloc_text(&s_pasv_res_str, str_to_const_char("Entering Passive Mode (") );
+  str_alloc_text(&s_pasv_res_str, str_to_const_char("Entering Passive Mode (\0") );
   if 0 == is_ipv6
   {
     str_append_text(&s_pasv_res_str, vsf_sysutil_inet_ntop(&s_p_sockaddr));
@@ -614,19 +652,19 @@ unsafe extern "C" fn handle_pasv (p_sess: &mut vsf_session,is_epsv: c_int) {
     }
     else
     {
-      str_append_text(&s_pasv_res_str, str_to_const_char("0,0,0,0") );
+      str_append_text(&s_pasv_res_str, str_to_const_char("0,0,0,0\0") );
     }
   }
   str_replace_char(&s_pasv_res_str, '.' as c_char, ',' as c_char );
-  str_append_text(&s_pasv_res_str, str_to_const_char(",") );
+  str_append_text(&s_pasv_res_str, str_to_const_char(",\0") );
 
   str_append_ulong(&s_pasv_res_str, (the_port >> 8).into() );
 //  let shift_the_port : u64 =  the_port >> 8;
 //  str_append_ulong(&s_pasv_res_str, shift_the_port);
 
-  str_append_text(&s_pasv_res_str, str_to_const_char(",") );
+  str_append_text(&s_pasv_res_str, str_to_const_char(",\0") );
   str_append_ulong(&s_pasv_res_str, (the_port & 255).into() );
-  str_append_text(&s_pasv_res_str, str_to_const_char(").") );
+  str_append_text(&s_pasv_res_str, str_to_const_char(").\0") );
   vsf_cmdio_write_str(p_sess, FTP_PASVOK, &s_pasv_res_str);
 }
 
@@ -651,7 +689,7 @@ unsafe extern "C" fn pasv_cleanup (p_sess: &vsf_session) {
 
 #[no_mangle]
 unsafe extern "C" fn handle_cdup (p_sess: &mut vsf_session) {
-  str_alloc_text(&p_sess.ftp_arg_str, str_to_const_char("..") );
+  str_alloc_text(&p_sess.ftp_arg_str, str_to_const_char("..\0") );
   handle_cwd(p_sess);
 }
 
@@ -664,7 +702,7 @@ unsafe extern "C" fn port_active (p_sess: &vsf_session) -> c_int {
     ret = 1;
     if 0 != pasv_active(p_sess)
      {
-      bug( str_to_const_char("port and pasv both active") );
+      bug( str_to_const_char("port and pasv both active\0") );
      }
    }
   return ret;
@@ -687,7 +725,7 @@ unsafe extern "C" fn pasv_active (p_sess: &vsf_session ) -> c_int {
    {
     if 0 != port_active(p_sess)
      {
-      bug( str_to_const_char("pasv and port both active") );
+      bug( str_to_const_char("pasv and port both active\0") );
      }
    }
 
@@ -699,7 +737,7 @@ unsafe extern "C" fn data_transfer_checks_ok (p_sess: &mut vsf_session) -> c_int
 
   if 0 == pasv_active(p_sess) && 0 == port_active(p_sess)
    {
-    vsf_cmdio_write(p_sess, FTP_BADSENDCONN, str_to_const_char("Use PORT or PASV first."));
+    vsf_cmdio_write(p_sess, FTP_BADSENDCONN, str_to_const_char("Use PORT or PASV first.\0"));
     return 0;
    }
 
@@ -707,7 +745,7 @@ unsafe extern "C" fn data_transfer_checks_ok (p_sess: &mut vsf_session) -> c_int
       ( ( 0 != tunable_force_local_data_ssl && 0 == p_sess.is_anonymous ) ||
         ( 0 != tunable_force_anon_data_ssl  && 0 != p_sess.is_anonymous ) )
    {
-    vsf_cmdio_write(p_sess, FTP_NEEDENCRYPT, str_to_const_char("Data connections must be encrypted."));
+    vsf_cmdio_write(p_sess, FTP_NEEDENCRYPT, str_to_const_char("Data connections must be encrypted.\0"));
     return 0;
    }
 
@@ -742,7 +780,7 @@ unsafe extern "C" fn get_remote_transfer_fd (p_sess: &mut vsf_session, p_status_
 
   if 0 == pasv_active(p_sess) && 0 == port_active(p_sess)
    {
-    bug(str_to_const_char("neither PORT nor PASV active in get_remote_transfer_fd"));
+    bug(str_to_const_char("neither PORT nor PASV active in get_remote_transfer_fd\0"));
    }
 
   p_sess.abor_received = 0;
@@ -776,7 +814,7 @@ unsafe extern "C" fn check_abor (p_sess: &mut vsf_session) {
   if 0 != p_sess.abor_received
    {
     p_sess.abor_received = 0;
-    vsf_cmdio_write(p_sess, FTP_ABOROK, str_to_const_char("ABOR successful."));
+    vsf_cmdio_write(p_sess, FTP_ABOROK, str_to_const_char("ABOR successful.\0"));
    }
 
 }
@@ -802,7 +840,7 @@ unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) {
   if 0 != p_sess.is_ascii && 0 != offset
    {
     vsf_cmdio_write(p_sess, FTP_FILEFAIL,
-                    str_to_const_char("No support for resume of ASCII transfer."));
+                    str_to_const_char("No support for resume of ASCII transfer.\0"));
     return;
    }
 
@@ -813,14 +851,14 @@ unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) {
 
   if 0 == vsf_access_check_file(&p_sess.ftp_arg_str)
    {
-    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0"));
     return;
    }
 
   opened_file = str_open(&p_sess.ftp_arg_str, EVSFSysStrOpenMode_kVSFSysStrOpenReadOnly);
   if 0 != vsf_sysutil_retval_is_error(opened_file)
   {
-    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Failed to open file."));
+    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Failed to open file.\0"));
     return;
   }
 
@@ -836,7 +874,7 @@ unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) {
   if 0 == vsf_sysutil_statbuf_is_regfile(s_p_statbuf)
    {
     // Note - pretend open failed
-    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Failed to open file."));
+    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Failed to open file.\0"));
     // Irritating FireFox does RETR on directories, so avoid logging this
     // very common and noisy case.
     if 0 != vsf_sysutil_statbuf_is_dir(s_p_statbuf)
@@ -854,7 +892,7 @@ unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) {
   if 0 != p_sess.is_anonymous && 0 != tunable_anon_world_readable_only &&
       0 == vsf_sysutil_statbuf_is_readable_other(s_p_statbuf)
    {
-    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Failed to open file."));
+    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Failed to open file.\0"));
     vsf_sysutil_close(opened_file);
     return;
    }
@@ -865,24 +903,24 @@ unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) {
     vsf_sysutil_lseek_to(opened_file, offset);
    }
 
-  str_alloc_text(&s_mark_str, str_to_const_char("Opening "));
+  str_alloc_text(&s_mark_str, str_to_const_char("Opening \0"));
 
   if 0 != tunable_ascii_download_enable && 0 != p_sess.is_ascii
    {
-    str_append_text(&s_mark_str, str_to_const_char("ASCII"));
+    str_append_text(&s_mark_str, str_to_const_char("ASCII\0"));
     is_ascii = 1;
    }
   else
    {
-    str_append_text(&s_mark_str, str_to_const_char("BINARY"));
+    str_append_text(&s_mark_str, str_to_const_char("BINARY\0"));
    }
 
-  str_append_text(&s_mark_str, str_to_const_char(" mode data connection for "));
+  str_append_text(&s_mark_str, str_to_const_char(" mode data connection for \0"));
   str_append_str(&s_mark_str, &p_sess.ftp_arg_str);
-  str_append_text(&s_mark_str, str_to_const_char(" ("));
+  str_append_text(&s_mark_str, str_to_const_char(" (\0"));
   str_append_filesize_t(&s_mark_str,
                         vsf_sysutil_statbuf_get_size(s_p_statbuf));
-  str_append_text(&s_mark_str, str_to_const_char(" bytes)."));
+  str_append_text(&s_mark_str, str_to_const_char(" bytes).\0"));
 
   let mut goto_port_pasv_cleanup = 0;
   if 0 != is_http
@@ -926,19 +964,19 @@ unsafe extern "C" fn handle_retr (p_sess: &mut vsf_session, is_http: c_int) {
     // clients truncating the transfer.
     if -1 == trans_ret.retval
      {
-      vsf_cmdio_write(p_sess, FTP_BADSENDFILE, str_to_const_char("Failure reading local file."));
+      vsf_cmdio_write(p_sess, FTP_BADSENDFILE, str_to_const_char("Failure reading local file.\0"));
      }
     else if -2 == trans_ret.retval
      {
       if 0 == p_sess.data_timeout
        {
         vsf_cmdio_write(p_sess, FTP_BADSENDNET,
-                        str_to_const_char("Failure writing network stream."));
+                        str_to_const_char("Failure writing network stream.\0"));
        }
      }
     else
      {
-      vsf_cmdio_write(p_sess, FTP_TRANSFEROK, str_to_const_char("Transfer complete."));
+      vsf_cmdio_write(p_sess, FTP_TRANSFEROK, str_to_const_char("Transfer complete.\0"));
      }
 
     check_abor(p_sess);
@@ -967,7 +1005,7 @@ unsafe extern "C" fn handle_rnto (p_sess: &vsf_session)
   if 0 != str_isempty(&p_sess.rnfr_filename_str)
    {
     vsf_cmdio_write(p_sess, FTP_NEEDRNFR,
-                    str_to_const_char("RNFR required first."));
+                    str_to_const_char("RNFR required first.\0"));
     return;
    }
 
@@ -981,7 +1019,7 @@ unsafe extern "C" fn handle_rnto (p_sess: &vsf_session)
   str_append_str(&p_sess.log_str, &s_tmp_str);
   if 0 == vsf_access_check_file(&p_sess.ftp_arg_str)
    {
-    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0"));
     return;
    }
 
@@ -994,11 +1032,11 @@ unsafe extern "C" fn handle_rnto (p_sess: &vsf_session)
   if retval == 0
    {
     vsf_log_do_log(p_sess, 1);
-    vsf_cmdio_write(p_sess, FTP_RENAMEOK, str_to_const_char("Rename successful."));
+    vsf_cmdio_write(p_sess, FTP_RENAMEOK, str_to_const_char("Rename successful.\0"));
    }
   else
    {
-    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Rename failed."));
+    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Rename failed.\0"));
    }
 
 }
@@ -1038,7 +1076,7 @@ unsafe extern "C" fn handle_upload_common (p_sess: &mut vsf_session, is_append: 
   prepend_path_to_filename(&p_sess.log_str);
   if 0 == vsf_access_check_file(p_filename)
    {
-    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0"));
     return;
    }
   /* NOTE - actual file permissions will be governed by the tunable umask */
@@ -1062,7 +1100,7 @@ unsafe extern "C" fn handle_upload_common (p_sess: &mut vsf_session, is_append: 
 
   if 0 != vsf_sysutil_retval_is_error(new_file_fd)
    {
-    vsf_cmdio_write(p_sess, FTP_UPLOADFAIL, str_to_const_char("Could not create file."));
+    vsf_cmdio_write(p_sess, FTP_UPLOADFAIL, str_to_const_char("Could not create file.\0"));
     return;
    }
 
@@ -1117,14 +1155,14 @@ unsafe extern "C" fn handle_upload_common (p_sess: &mut vsf_session, is_append: 
    {
 //    struct mystr resp_str = INIT_MYSTR;
     let mut resp_str = default_mystr();
-    str_alloc_text(&resp_str, str_to_const_char("FILE: "));
+    str_alloc_text(&resp_str, str_to_const_char("FILE: \0"));
     str_append_str(&resp_str, p_filename);
     remote_fd = get_remote_transfer_fd(p_sess, str_getbuf(&resp_str));
     str_free(&resp_str);
    }
   else
    {
-    remote_fd = get_remote_transfer_fd(p_sess, str_to_const_char("Ok to send data."));
+    remote_fd = get_remote_transfer_fd(p_sess, str_to_const_char("Ok to send data.\0"));
    }
 
   if  0 != vsf_sysutil_retval_is_error(remote_fd)
@@ -1163,19 +1201,19 @@ unsafe extern "C" fn handle_upload_common (p_sess: &mut vsf_session, is_append: 
 
   if trans_ret.retval == -1
    {
-    vsf_cmdio_write(p_sess, FTP_BADSENDFILE, str_to_const_char("Failure writing to local file."));
+    vsf_cmdio_write(p_sess, FTP_BADSENDFILE, str_to_const_char("Failure writing to local file.\0"));
    }
   else if trans_ret.retval == -2
    {
     if 0 == p_sess.data_timeout
      {
       vsf_cmdio_write(p_sess, FTP_BADSENDNET,
-                      str_to_const_char("Failure reading network stream."));
+                      str_to_const_char("Failure reading network stream.\0"));
      }
    }
   else
    {
-    vsf_cmdio_write(p_sess, FTP_TRANSFEROK, str_to_const_char("Transfer complete."));
+    vsf_cmdio_write(p_sess, FTP_TRANSFEROK, str_to_const_char("Transfer complete.\0"));
    }
 
   check_abor(p_sess);
@@ -1202,14 +1240,14 @@ unsafe extern "C" fn handle_size (p_sess: &vsf_session) {
   resolve_tilde(&p_sess.ftp_arg_str, p_sess);
   if 0 == vsf_access_check_file(&p_sess.ftp_arg_str)
    {
-    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.") );
+    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0") );
     return;
    }
 
   retval = str_stat(&p_sess.ftp_arg_str, &mut s_p_statbuf);
   if retval != 0 || 0 == vsf_sysutil_statbuf_is_regfile(s_p_statbuf)
    {
-    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Could not get file size.") );
+    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("Could not get file size.\0") );
    }
   else
    {
@@ -1231,29 +1269,29 @@ unsafe extern "C" fn handle_site (p_sess: &vsf_session) {
   str_upper(&p_sess.ftp_arg_str);
   if 0 != tunable_write_enable &&
      0 != tunable_chmod_enable &&
-     0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("CHMOD"))
+     0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("CHMOD\0"))
    {
     handle_site_chmod(p_sess, &s_site_args_str);
    }
-  else if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("UMASK"))
+  else if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("UMASK\0"))
    {
     handle_site_umask(p_sess, &s_site_args_str);
    }
-  else if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("HELP"))
+  else if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("HELP\0"))
    {
     if 0 != tunable_write_enable &&
        0 != tunable_chmod_enable
      {
-      vsf_cmdio_write(p_sess, FTP_SITEHELP, str_to_const_char( "CHMOD UMASK HELP"));
+      vsf_cmdio_write(p_sess, FTP_SITEHELP, str_to_const_char( "CHMOD UMASK HELP\0"));
      }
     else
      {
-      vsf_cmdio_write(p_sess, FTP_SITEHELP, str_to_const_char("UMASK HELP"));
+      vsf_cmdio_write(p_sess, FTP_SITEHELP, str_to_const_char("UMASK HELP\0"));
      }
    }
   else
    {
-    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Unknown SITE command."));
+    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Unknown SITE command.\0"));
    }
 }
 
@@ -1265,14 +1303,14 @@ unsafe extern "C" fn handle_site_chmod (p_sess: &vsf_session, p_arg_str: &mystr)
 
   if 0 != str_isempty(p_arg_str)
    {
-    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("SITE CHMOD needs 2 arguments."));
+    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("SITE CHMOD needs 2 arguments.\0"));
     return;
    }
 
   str_split_char(p_arg_str, &s_chmod_file_str, ' ' as c_char);
   if 0 != str_isempty(&s_chmod_file_str)
    {
-    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("SITE CHMOD needs 2 arguments."));
+    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("SITE CHMOD needs 2 arguments.\0"));
     return;
    }
 
@@ -1284,7 +1322,7 @@ unsafe extern "C" fn handle_site_chmod (p_sess: &vsf_session, p_arg_str: &mystr)
   str_append_str(&p_sess.log_str, p_arg_str);
   if 0 == vsf_access_check_file(&s_chmod_file_str)
    {
-    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0"));
     return;
    }
 
@@ -1293,12 +1331,12 @@ unsafe extern "C" fn handle_site_chmod (p_sess: &vsf_session, p_arg_str: &mystr)
   retval = str_chmod(&s_chmod_file_str, perms);
   if 0 != vsf_sysutil_retval_is_error(retval)
    {
-    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("SITE CHMOD command failed."));
+    vsf_cmdio_write(p_sess, FTP_FILEFAIL, str_to_const_char("SITE CHMOD command failed.\0"));
    }
   else
    {
     vsf_log_do_log(p_sess, 1);
-    vsf_cmdio_write(p_sess, FTP_CHMODOK, str_to_const_char("SITE CHMOD command ok."));
+    vsf_cmdio_write(p_sess, FTP_CHMODOK, str_to_const_char("SITE CHMOD command ok.\0"));
    }
 }
 
@@ -1310,7 +1348,7 @@ unsafe extern "C" fn handle_site_umask (p_sess: &vsf_session, p_arg_str: &mystr)
   if 0 != str_isempty(p_arg_str)
    {
     /* Empty arg => report current umask */
-    str_alloc_text(&s_umask_resp_str, str_to_const_char("Your current UMASK is "));
+    str_alloc_text(&s_umask_resp_str, str_to_const_char("Your current UMASK is \0"));
     str_append_text(&s_umask_resp_str,
                     vsf_sysutil_uint_to_octal(vsf_sysutil_get_umask()));
    }
@@ -1320,7 +1358,7 @@ unsafe extern "C" fn handle_site_umask (p_sess: &vsf_session, p_arg_str: &mystr)
 //    unsigned int new_umask = str_octal_to_uint(p_arg_str);
     let mut new_umask : c_uint = str_octal_to_uint(p_arg_str);
     vsf_sysutil_set_umask(new_umask);
-    str_alloc_text(&s_umask_resp_str, str_to_const_char("UMASK set to "));
+    str_alloc_text(&s_umask_resp_str, str_to_const_char("UMASK set to \0"));
     str_append_text(&s_umask_resp_str,
                     vsf_sysutil_uint_to_octal(vsf_sysutil_get_umask()));
    }
@@ -1363,7 +1401,7 @@ unsafe extern "C" fn handle_mdtm (p_sess: &vsf_session) {
   resolve_tilde(&p_sess.ftp_arg_str, p_sess);
   if 0 == vsf_access_check_file(&p_sess.ftp_arg_str)
    {
-    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+    vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0"));
     return;
    }
 
@@ -1374,7 +1412,7 @@ unsafe extern "C" fn handle_mdtm (p_sess: &vsf_session) {
     if retval != 0 || 0 == vsf_sysutil_statbuf_is_regfile(s_p_statbuf)
      {
       vsf_cmdio_write(p_sess, FTP_FILEFAIL,
-                      str_to_const_char("Could not set file modification time."));
+                      str_to_const_char("Could not set file modification time.\0"));
      }
     else
      {
@@ -1383,12 +1421,12 @@ unsafe extern "C" fn handle_mdtm (p_sess: &vsf_session) {
       if retval != 0
        {
         vsf_cmdio_write(p_sess, FTP_FILEFAIL,
-                        str_to_const_char("Could not set file modification time."));
+                        str_to_const_char("Could not set file modification time.\0"));
        }
       else
        {
         vsf_cmdio_write(p_sess, FTP_MDTMOK,
-                        str_to_const_char("File modification time set."));
+                        str_to_const_char("File modification time set.\0"));
        }
      }
    }
@@ -1397,7 +1435,7 @@ unsafe extern "C" fn handle_mdtm (p_sess: &vsf_session) {
     if retval != 0 || 0 == vsf_sysutil_statbuf_is_regfile(s_p_statbuf)
      {
       vsf_cmdio_write(p_sess, FTP_FILEFAIL,
-                      str_to_const_char("Could not get file modification time."));
+                      str_to_const_char("Could not get file modification time.\0"));
      }
     else
      {
@@ -1420,21 +1458,21 @@ unsafe extern "C" fn handle_stou (p_sess: &mut vsf_session) {
 unsafe extern "C" fn handle_logged_in_user (p_sess: &vsf_session) {
   if 0 != p_sess.is_anonymous
    {
-    vsf_cmdio_write(p_sess, FTP_LOGINERR, str_to_const_char("Can't change from guest user."));
+    vsf_cmdio_write(p_sess, FTP_LOGINERR, str_to_const_char("Can't change from guest user.\0"));
    }
   else if 0 != str_equal(&p_sess.user_str, &p_sess.ftp_arg_str)
    {
-    vsf_cmdio_write(p_sess, FTP_GIVEPWORD, str_to_const_char("Any password will do."));
+    vsf_cmdio_write(p_sess, FTP_GIVEPWORD, str_to_const_char("Any password will do.\0"));
    }
   else
    {
-    vsf_cmdio_write(p_sess, FTP_LOGINERR, str_to_const_char("Can't change to another user."));
+    vsf_cmdio_write(p_sess, FTP_LOGINERR, str_to_const_char("Can't change to another user.\0"));
    }
 }
 
 #[no_mangle]
 unsafe extern "C" fn handle_logged_in_pass (p_sess: &vsf_session) {
-  vsf_cmdio_write(p_sess, FTP_LOGINOK, str_to_const_char("Already logged in."));
+  vsf_cmdio_write(p_sess, FTP_LOGINOK, str_to_const_char("Already logged in.\0"));
 }
 
 #[no_mangle]
@@ -1451,13 +1489,13 @@ unsafe extern "C" fn handle_dir_common (p_sess: &mut vsf_session, full_details: 
   str_empty(&s_option_str);
   str_empty(&s_filter_str);
   /* By default open the current directory */
-  str_alloc_text(&s_dir_name_str, str_to_const_char("."));
+  str_alloc_text(&s_dir_name_str, str_to_const_char(".\0"));
   if 0 == stat_cmd && 0 == data_transfer_checks_ok(p_sess)
    {
     return;
    }
   /* Do we have an option? Going to be strict here - the option must come
-   * first. e.g. "ls -a .." fine, "ls .. -a" not fine
+   * first. e.g. "ls -a .." fine, "ls .. -a\0" not fine
    */
   if 0 == str_isempty(&p_sess.ftp_arg_str) &&
       str_get_char_at(&p_sess.ftp_arg_str, 0) == '-' as c_char
@@ -1478,10 +1516,10 @@ unsafe extern "C" fn handle_dir_common (p_sess: &mut vsf_session, full_details: 
     resolve_tilde(&s_filter_str, p_sess);
     if 0 == vsf_access_check_file(&s_filter_str)
      {
-      vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+      vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0"));
       return;
      }
-    /* First check - is it an outright directory, as in "ls /pub" */
+    /* First check - is it an outright directory, as in "ls /pub\0" */
     p_dir = str_opendir(&s_filter_str);
     if p_dir != ptr::null_mut()
      {
@@ -1499,12 +1537,12 @@ unsafe extern "C" fn handle_dir_common (p_sess: &mut vsf_session, full_details: 
          */
         str_copy(&s_dir_name_str, &s_filter_str);
         str_split_char_reverse(&s_dir_name_str, &s_filter_str, '/' as c_char);
-        /* If we have e.g. "ls /.message", we just ripped off the leading
+        /* If we have e.g. "ls /.message\0", we just ripped off the leading
          * slash because it is the only one!
          */
         if 0 != str_isempty(&s_dir_name_str)
          {
-          str_alloc_text(&s_dir_name_str, str_to_const_char("/"));
+          str_alloc_text(&s_dir_name_str, str_to_const_char("/\0"));
          }
        }
      }
@@ -1520,11 +1558,11 @@ unsafe extern "C" fn handle_dir_common (p_sess: &mut vsf_session, full_details: 
    {
     use_control = 1;
     str_append_char(&s_option_str, 'a' as c_char);
-    vsf_cmdio_write_hyphen(p_sess, FTP_STATFILE_OK, str_to_const_char("Status follows:"));
+    vsf_cmdio_write_hyphen(p_sess, FTP_STATFILE_OK, str_to_const_char("Status follows:\0"));
    }
   else
    {
-    let remote_fd : c_int = get_remote_transfer_fd(p_sess, str_to_const_char("Here comes the directory listing."));
+    let remote_fd : c_int = get_remote_transfer_fd(p_sess, str_to_const_char("Here comes the directory listing.\0"));
     if 0 != vsf_sysutil_retval_is_error(remote_fd)
      {
 //      goto dir_close_out;
@@ -1567,24 +1605,24 @@ unsafe extern "C" fn handle_dir_common (p_sess: &mut vsf_session, full_details: 
 
   if 0 != stat_cmd
    {
-    vsf_cmdio_write(p_sess, FTP_STATFILE_OK, str_to_const_char("End of status"));
+    vsf_cmdio_write(p_sess, FTP_STATFILE_OK, str_to_const_char("End of status\0"));
    }
   else if retval != 0
    {
     if 0 == p_sess.data_timeout
     {
       vsf_cmdio_write(p_sess, FTP_BADSENDNET,
-                      str_to_const_char("Failure writing network stream."));
+                      str_to_const_char("Failure writing network stream.\0"));
     }
    }
   else if p_dir == ptr::null_mut() || 0 == dir_allow_read
    {
     vsf_cmdio_write(p_sess, FTP_TRANSFEROK,
-                    str_to_const_char("Transfer done (but failed to open directory)."));
+                    str_to_const_char("Transfer done (but failed to open directory).\0"));
    }
   else
    {
-    vsf_cmdio_write(p_sess, FTP_TRANSFEROK, str_to_const_char("Directory send OK."));
+    vsf_cmdio_write(p_sess, FTP_TRANSFEROK, str_to_const_char("Directory send OK.\0"));
    }
 
   check_abor(p_sess);
@@ -1615,7 +1653,7 @@ unsafe extern "C" fn handle_port (p_sess: &vsf_session) {
 
   if p_raw == ptr::null_mut()
    {
-    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Illegal PORT command."));
+    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Illegal PORT command.\0"));
     return;
    }
 
@@ -1632,13 +1670,13 @@ unsafe extern "C" fn handle_port (p_sess: &vsf_session) {
     if 0 == vsf_sysutil_sockaddr_addr_equal(p_sess.p_remote_addr,p_sess.p_port_sockaddr) ||
        0 != vsf_sysutil_is_port_reserved(the_port)
      {
-      vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Illegal PORT command."));
+      vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Illegal PORT command.\0"));
       port_cleanup(p_sess);
       return;
      }
    }
   vsf_cmdio_write(p_sess, FTP_PORTOK,
-                  str_to_const_char("PORT command successful. Consider using PASV."));
+                  str_to_const_char("PORT command successful. Consider using PASV.\0"));
 }
 
 #[no_mangle]
@@ -1658,7 +1696,7 @@ unsafe extern "C" fn handle_eprt (p_sess: &vsf_session) {
   if 0 == str_isempty(&s_part1_str)
    {
 //    goto bad_eprt;
-    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Bad EPRT command."));
+    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Bad EPRT command.\0"));
     return;
    }
 
@@ -1667,7 +1705,7 @@ unsafe extern "C" fn handle_eprt (p_sess: &vsf_session) {
   proto = str_atoi(&s_part2_str);
   if proto < 1 || proto > 2 || (0 == is_ipv6 && proto == 2)
    {
-    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Bad EPRT protocol."));
+    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Bad EPRT protocol.\0"));
     return;
    }
 
@@ -1687,7 +1725,7 @@ unsafe extern "C" fn handle_eprt (p_sess: &vsf_session) {
 //  if ptr::null_mut() == p_raw_addr
    {
 //    goto bad_eprt;
-    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Bad EPRT command."));
+    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Bad EPRT command.\0"));
     return;
    }
 
@@ -1696,7 +1734,7 @@ unsafe extern "C" fn handle_eprt (p_sess: &vsf_session) {
   if 0 == str_isempty(&s_part1_str) || 0 != str_isempty(&s_part2_str)
    {
 //    goto bad_eprt;
-    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Bad EPRT command."));
+    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Bad EPRT command.\0"));
     return;
    }
 
@@ -1704,7 +1742,7 @@ unsafe extern "C" fn handle_eprt (p_sess: &vsf_session) {
   if port < 0 || port > 65535
    {
 //    goto bad_eprt;
-    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Bad EPRT command."));
+    vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Bad EPRT command.\0"));
     return;
    }
 
@@ -1728,16 +1766,16 @@ unsafe extern "C" fn handle_eprt (p_sess: &vsf_session) {
     if 0 == vsf_sysutil_sockaddr_addr_equal(p_sess.p_remote_addr,p_sess.p_port_sockaddr) ||
        0 != vsf_sysutil_is_port_reserved(port.try_into().unwrap())
      {
-      vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Illegal EPRT command."));
+      vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Illegal EPRT command.\0"));
       port_cleanup(p_sess);
       return;
      }
    }
   vsf_cmdio_write(p_sess, FTP_EPRTOK,
-                  str_to_const_char("EPRT command successful. Consider using EPSV."));
+                  str_to_const_char("EPRT command successful. Consider using EPSV.\0"));
 //  return;
 //bad_eprt:
-//  vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Bad EPRT command."));
+//  vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Bad EPRT command.\0"));
 }
 
 
@@ -1756,7 +1794,7 @@ unsafe extern "C" fn fnget_unique_filename (p_outstr: &mystr,p_base_str: &mystr)
 
   if 0 != str_isempty(p_real_base_str)
    {
-    str_alloc_text(&s_stou_str, str_to_const_char("STOU"));
+    str_alloc_text(&s_stou_str, str_to_const_char("STOU\0"));
     p_real_base_str = &s_stou_str;
    }
   else
@@ -1786,9 +1824,11 @@ unsafe extern "C" fn fnget_unique_filename (p_outstr: &mystr,p_base_str: &mystr)
 
 }
 
-
+/*
 #[no_mangle]
 unsafe extern "C" fn process_post_login (p_sess: &mut vsf_session) {
+//  if postlogin_debug { println!("process_post_login\0"); }
+
   str_getcwd(&p_sess.home_str);
 
   if 0 != p_sess.is_anonymous
@@ -1805,7 +1845,7 @@ unsafe extern "C" fn process_post_login (p_sess: &mut vsf_session) {
   if 0 != p_sess.is_http
    {
     handle_http(p_sess);
-    bug(str_to_const_char("should not be reached"));
+    bug(str_to_const_char("should not be reached\0"));
    }
 
   // Don't support async ABOR if we have an SSL channel. The spec says SHOULD
@@ -1819,14 +1859,16 @@ unsafe extern "C" fn process_post_login (p_sess: &mut vsf_session) {
 
   // Handle any login message
   vsf_banner_dir_changed(p_sess, FTP_LOGINOK);
-  vsf_cmdio_write(p_sess, FTP_LOGINOK, str_to_const_char("Login successful."));
+//  if postlogin_debug { println!("vsf_cmdio_write\0"); }
+    vsf_cmdio_write(p_sess, FTP_LOGINOK, str_to_const_char("Login successful.\0"));
+  if postlogin_debug { println!("FTP_LOGINOK\0"); }
 
   while true
    {
     let mut cmd_ok : c_int = 1;
     if 0 != tunable_setproctitle_enable
      {
-      vsf_sysutil_setproctitle(str_to_const_char("IDLE"));
+      vsf_sysutil_setproctitle(str_to_const_char("IDLE\0"));
      }
 
     // Blocks
@@ -1899,277 +1941,277 @@ unsafe extern "C" fn process_post_login (p_sess: &mut vsf_session) {
 
     if 0 == cmd_ok
      {
-      vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+      vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0"));
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("QUIT"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("QUIT\0"))
      {
-      vsf_cmdio_write_exit(p_sess, FTP_GOODBYE, str_to_const_char("Goodbye."), 0);
+      vsf_cmdio_write_exit(p_sess, FTP_GOODBYE, str_to_const_char("Goodbye.\0"), 0);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PWD" )) ||
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XPWD"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PWD\0" )) ||
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XPWD\0"))
      {
       handle_pwd(p_sess);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("CWD" )) ||
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XCWD"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("CWD\0" )) ||
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XCWD\0"))
      {
       handle_cwd(p_sess);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("CDUP")) ||
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XCUP"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("CDUP\0")) ||
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XCUP\0"))
      {
       handle_cdup(p_sess);
      }
     else if 0 != tunable_pasv_enable &&
             0 == p_sess.epsv_all &&
-             ( 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PASV")) ||
-               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("P@SW")) )
+             ( 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PASV\0")) ||
+               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("P@SW\0")) )
      {
       handle_pasv(p_sess, 0);
      }
     else if 0 != tunable_pasv_enable &&
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("EPSV"))
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("EPSV\0"))
      {
       handle_pasv(p_sess, 1);
      }
     else if 0 != tunable_download_enable &&
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RETR"))
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RETR\0"))
      {
       handle_retr(p_sess, 0);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("NOOP"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("NOOP\0"))
      {
-      vsf_cmdio_write(p_sess, FTP_NOOPOK, str_to_const_char("NOOP ok."));
+      vsf_cmdio_write(p_sess, FTP_NOOPOK, str_to_const_char("NOOP ok.\0"));
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SYST"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SYST\0"))
      {
-      vsf_cmdio_write(p_sess, FTP_SYSTOK, str_to_const_char("UNIX Type: L8"));
+      vsf_cmdio_write(p_sess, FTP_SYSTOK, str_to_const_char("UNIX Type: L8\0"));
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("HELP"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("HELP\0"))
      {
       handle_help(p_sess);
      }
     else if 0 != tunable_dirlist_enable &&
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("LIST"))
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("LIST\0"))
      {
       handle_list(p_sess);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("TYPE"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("TYPE\0"))
      {
       handle_type(p_sess);
      }
     else if 0 != tunable_port_enable &&
             0 == p_sess.epsv_all &&
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PORT"))
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PORT\0"))
      {
       handle_port(p_sess);
      }
     else if 0 != tunable_write_enable &&
              ( 0 != tunable_anon_upload_enable || 0 == p_sess.is_anonymous ) &&
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STOR"))
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STOR\0"))
      {
       handle_stor(p_sess);
      }
     else if 0 != tunable_write_enable &&
              ( 0 != tunable_anon_mkdir_write_enable || 0 == p_sess.is_anonymous ) &&
-             ( 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("MKD" )) ||
-               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XMKD")) )
+             ( 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("MKD\0" )) ||
+               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XMKD\0")) )
      {
       handle_mkd(p_sess);
      }
     else if 0 != tunable_write_enable &&
              ( 0 != tunable_anon_other_write_enable || 0 == p_sess.is_anonymous ) &&
-             ( 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RMD" )) ||
-               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XRMD")))
+             ( 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RMD\0" )) ||
+               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XRMD\0")))
      {
       handle_rmd(p_sess);
      }
     else if 0 != tunable_write_enable &&
              ( 0 != tunable_anon_other_write_enable || 0 == p_sess.is_anonymous ) &&
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("DELE"))
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("DELE\0"))
      {
       handle_dele(p_sess);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("REST"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("REST\0"))
      {
       handle_rest(p_sess);
      }
     else if 0 != tunable_write_enable &&
              ( 0 != tunable_anon_other_write_enable || 0 == p_sess.is_anonymous) &&
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RNFR"))
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RNFR\0"))
      {
       handle_rnfr(p_sess);
      }
     else if 0 != tunable_write_enable &&
              ( 0 != tunable_anon_other_write_enable || 0 == p_sess.is_anonymous) &&
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RNTO"))
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RNTO\0"))
      {
       handle_rnto(p_sess);
      }
     else if 0 != tunable_dirlist_enable &&
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("NLST"))
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("NLST\0"))
      {
       handle_nlst(p_sess);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SIZE"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SIZE\0"))
      {
       handle_size(p_sess);
      }
     else if 0 == p_sess.is_anonymous &&
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SITE"))
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SITE\0"))
      {
       handle_site(p_sess);
      }
     // Note - the weird ABOR string is checking for an async ABOR arriving
     // without a SIGURG condition.
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ABOR")) ||
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("\0o377\0o364\0o377\0o362ABOR"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ABOR\0")) ||
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("\0o377\0o364\0o377\0o362ABOR\0"))
      {
-      vsf_cmdio_write(p_sess, FTP_ABOR_NOCONN, str_to_const_char("No transfer to ABOR."));
+      vsf_cmdio_write(p_sess, FTP_ABOR_NOCONN, str_to_const_char("No transfer to ABOR.\0"));
      }
     else if 0 != tunable_write_enable &&
              ( 0 != tunable_anon_other_write_enable || 0 == p_sess.is_anonymous) &&
-               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("APPE"))
+               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("APPE\0"))
      {
       handle_appe(p_sess);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("MDTM"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("MDTM\0"))
      {
       handle_mdtm(p_sess);
      }
     else if 0 != tunable_port_enable &&
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("EPRT"))
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("EPRT\0"))
      {
       handle_eprt(p_sess);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STRU"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STRU\0"))
      {
       str_upper(&p_sess.ftp_arg_str);
-      if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("F"))
+      if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("F\0"))
        {
-        vsf_cmdio_write(p_sess, FTP_STRUOK, str_to_const_char("Structure set to F."));
+        vsf_cmdio_write(p_sess, FTP_STRUOK, str_to_const_char("Structure set to F.\0"));
        }
       else
        {
-        vsf_cmdio_write(p_sess, FTP_BADSTRU, str_to_const_char("Bad STRU command."));
+        vsf_cmdio_write(p_sess, FTP_BADSTRU, str_to_const_char("Bad STRU command.\0"));
        }
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("MODE"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("MODE\0"))
      {
       str_upper(&p_sess.ftp_arg_str);
-      if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("S"))
+      if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("S\0"))
        {
-        vsf_cmdio_write(p_sess, FTP_MODEOK, str_to_const_char("Mode set to S."));
+        vsf_cmdio_write(p_sess, FTP_MODEOK, str_to_const_char("Mode set to S.\0"));
        }
       else
        {
-        vsf_cmdio_write(p_sess, FTP_BADMODE, str_to_const_char("Bad MODE command."));
+        vsf_cmdio_write(p_sess, FTP_BADMODE, str_to_const_char("Bad MODE command.\0"));
        }
      }
     else if 0 != tunable_write_enable &&
              ( 0 != tunable_anon_upload_enable || 0 == p_sess.is_anonymous ) &&
-               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STOU"))
+               0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STOU\0"))
      {
       handle_stou(p_sess);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ALLO"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ALLO\0"))
      {
-      vsf_cmdio_write(p_sess, FTP_ALLOOK, str_to_const_char("ALLO command ignored."));
+      vsf_cmdio_write(p_sess, FTP_ALLOOK, str_to_const_char("ALLO command ignored.\0"));
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("REIN"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("REIN\0"))
      {
-      vsf_cmdio_write(p_sess, FTP_COMMANDNOTIMPL, str_to_const_char("REIN not implemented."));
+      vsf_cmdio_write(p_sess, FTP_COMMANDNOTIMPL, str_to_const_char("REIN not implemented.\0"));
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ACCT"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ACCT\0"))
      {
-      vsf_cmdio_write(p_sess, FTP_COMMANDNOTIMPL, str_to_const_char("ACCT not implemented."));
+      vsf_cmdio_write(p_sess, FTP_COMMANDNOTIMPL, str_to_const_char("ACCT not implemented.\0"));
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SMNT"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SMNT\0"))
      {
-      vsf_cmdio_write(p_sess, FTP_COMMANDNOTIMPL, str_to_const_char("SMNT not implemented."));
+      vsf_cmdio_write(p_sess, FTP_COMMANDNOTIMPL, str_to_const_char("SMNT not implemented.\0"));
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("FEAT"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("FEAT\0"))
      {
       handle_feat(p_sess);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("OPTS"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("OPTS\0"))
      {
       handle_opts(p_sess);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STAT")) &&
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STAT\0")) &&
             0 != str_isempty(&p_sess.ftp_arg_str)
      {
       handle_stat(p_sess);
      }
     else if 0 != tunable_dirlist_enable &&
-            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STAT"))
+            0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STAT\0"))
      {
       handle_stat_file(p_sess);
      }
-    else if 0 != tunable_ssl_enable && 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PBSZ"))
+    else if 0 != tunable_ssl_enable && 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PBSZ\0"))
      {
       handle_pbsz(p_sess);
      }
-    else if 0 != tunable_ssl_enable && 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PROT"))
+    else if 0 != tunable_ssl_enable && 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PROT\0"))
      {
       handle_prot(p_sess);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("USER"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("USER\0"))
      {
       handle_logged_in_user(p_sess);
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PASS"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PASS\0"))
      {
       handle_logged_in_pass(p_sess);
      }
     else if
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PASV")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PORT")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STOR")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("MKD")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XMKD")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RMD")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XRMD")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("DELE")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RNFR")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RNTO")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SITE")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("APPE")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("EPSV")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("EPRT")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RETR")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("LIST")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("NLST")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STOU")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ALLO")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("REIN")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ACCT")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SMNT")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("FEAT")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("OPTS")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STAT")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PBSZ")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PROT"))
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PASV\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PORT\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STOR\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("MKD\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XMKD\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RMD\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("XRMD\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("DELE\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RNFR\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RNTO\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SITE\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("APPE\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("EPSV\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("EPRT\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("RETR\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("LIST\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("NLST\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STOU\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ALLO\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("REIN\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("ACCT\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("SMNT\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("FEAT\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("OPTS\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("STAT\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PBSZ\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("PROT\0"))
      {
-      vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied."));
+      vsf_cmdio_write(p_sess, FTP_NOPERM, str_to_const_char("Permission denied.\0"));
      }
     else if 0 != str_isempty(&p_sess.ftp_cmd_str) &&
             0 != str_isempty(&p_sess.ftp_arg_str)
      {
        // Deliberately ignore to avoid NAT device bugs. ProFTPd does the same.
      }
-    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("GET")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("POST")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("HEAD")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("OPTIONS")) ||
-             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("CONNECT"))
+    else if 0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("GET\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("POST\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("HEAD\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("OPTIONS\0")) ||
+             0 != str_equal_text(&p_sess.ftp_cmd_str, str_to_const_char("CONNECT\0"))
      {
       vsf_cmdio_write_exit(p_sess, FTP_BADCMD,
-                           str_to_const_char("HTTP protocol commands not allowed."), 1);
+                           str_to_const_char("HTTP protocol commands not allowed.\0"), 1);
      }
     else
      {
-      vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Unknown command."));
+      vsf_cmdio_write(p_sess, FTP_BADCMD, str_to_const_char("Unknown command.\0"));
      }
 
     if 0 != vsf_log_entry_pending(p_sess)
@@ -2180,8 +2222,9 @@ unsafe extern "C" fn process_post_login (p_sess: &mut vsf_session) {
     if 0 != p_sess.data_timeout
      {
       vsf_cmdio_write_exit(p_sess, FTP_DATA_TIMEOUT,
-                           str_to_const_char("Data timeout. Reconnect. Sorry."), 1);
+                           str_to_const_char("Data timeout. Reconnect. Sorry.\0"), 1);
      }
 
   }
 }
+*/
