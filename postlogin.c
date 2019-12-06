@@ -28,7 +28,7 @@
 #include "vsftpver.h"
 #include "opts.h"
 
-#define ONLY_ONE
+//#define ONLY_ONE
 
 /* Private local functions */
 //static void handle_pwd(struct vsf_session* p_sess);

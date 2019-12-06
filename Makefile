@@ -10,7 +10,7 @@ CFLAGS	=-g -O2 -fPIE -fstack-protector --param=ssp-buffer-size=4 \
 
 LIBS	=	`./vsf_findlibs.sh`
 LINK	=	-Wl,-s
-LDFLAGS	=	-fPIE -pie -Wl,-z,relro -Wl,-z,now -Wl,-z,g
+LDFLAGS	=	-fPIE -pie -Wl,-z,relro -Wl,-z,now
 
 OBJS	=	main.o utility.o prelogin.o ftpcmdio.o privsock.o postlogin.o \
 		tunables.o ftpdataio.o secbuf.o ls.o \

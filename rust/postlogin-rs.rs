@@ -245,42 +245,11 @@ unsafe extern "C" fn handle_mkd (p_sess: &vsf_session) {
 
 }
 
-unsafe fn print_char_array_len (a: *const i8, len: u32) {
-
-  print!("\"\0");
-  for i in 0..len{
-    print!("{:#?}\0",*a.offset(i.try_into().unwrap()));
-  }
-  print!("\"\0");
-
-}
-
-unsafe fn print_char_array (a: *const i8) {
-
-  print!("\"\0");
-
-  let mut i=0;
-  while a.offset(i) != ptr::null_mut() {
-    print!("{:#?}\0",*a.offset(i.try_into().unwrap()));
-    i = i +1;
-  }
-
-  print!("\"\0");
-}
 
 #[no_mangle]
 unsafe extern "C" fn handle_type (p_sess: &mut vsf_session) {
 
   str_upper(&p_sess.ftp_arg_str);
-  let cmp = str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("I\0"));
-
-/*
-  print!("handle_type: cmp={} I:\0",cmp);
-  print_char_array(str_to_const_char("I\0"));
-  print!(" arg_str:\0");
-  print_char_array_len(p_sess.ftp_arg_str.p_buf,p_sess.ftp_arg_str.len);
-  println!("\0");
-*/
 
   if 0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("I\0"  )) ||
      0 != str_equal_text(&p_sess.ftp_arg_str, str_to_const_char("I\0" )) ||
@@ -579,12 +548,10 @@ unsafe extern "C" fn handle_pasv (p_sess: &mut vsf_session,is_epsv: c_int) {
 
   let mut tmp_sockaddr  = default_sockaddr();// sockaddr { sa_family: 3, sa_data: [0; 14usize] };
   let mut tmp_vsf_sockaddr = vsf_sysutil_sockaddr__bindgen_ty_1 { u_sockaddr: tmp_sockaddr };
-  let s_p_sockaddr : vsf_sysutil_sockaddr = vsf_sysutil_sockaddr { u: tmp_vsf_sockaddr };
+  let mut s_p_sockaddr : vsf_sysutil_sockaddr = vsf_sysutil_sockaddr { u: tmp_vsf_sockaddr };
 
   let mut is_ipv6: c_int = vsf_sysutil_sockaddr_is_ipv6(p_sess.p_local_addr);
 
-  let cmp = str_isempty(&p_sess.ftp_arg_str);
-  println!("cmp={}",cmp);
   if 0 != is_epsv && 0 == str_isempty(&p_sess.ftp_arg_str)
    {
     let mut argval: c_int;
@@ -640,9 +607,9 @@ unsafe extern "C" fn handle_pasv (p_sess: &mut vsf_session,is_epsv: c_int) {
 
   str_alloc_text(&s_pasv_res_str, str_to_const_char("Entering Passive Mode (\0") );
   if 0 == is_ipv6
-  {
+   {
     str_append_text(&s_pasv_res_str, vsf_sysutil_inet_ntop(&s_p_sockaddr));
-  }
+   }
   else
   {
     let p_v4addr: *const c_void = vsf_sysutil_sockaddr_ipv6_v4(&s_p_sockaddr);
@@ -1824,7 +1791,7 @@ unsafe extern "C" fn fnget_unique_filename (p_outstr: &mystr,p_base_str: &mystr)
 
 }
 
-/*
+
 #[no_mangle]
 unsafe extern "C" fn process_post_login (p_sess: &mut vsf_session) {
 //  if postlogin_debug { println!("process_post_login\0"); }
@@ -2227,4 +2194,3 @@ unsafe extern "C" fn process_post_login (p_sess: &mut vsf_session) {
 
   }
 }
-*/

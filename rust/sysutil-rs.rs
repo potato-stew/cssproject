@@ -1626,6 +1626,8 @@ unsafe extern "C" fn vsf_sysutil_sockaddr_alloc_ipv6(p_sockptr:*mut*mut vsf_sysu
   (*(*p_sockptr)).u.u_sockaddr.sa_family = AF_INET6 as u16;
 }
 
+
+#[no_mangle]
 unsafe extern "C" fn fnvsf_sysutil_sockaddr_clone(p_sockptr:*mut*mut vsf_sysutil_sockaddr,
                            p_src: *const vsf_sysutil_sockaddr)
 {
@@ -1653,7 +1655,6 @@ unsafe extern "C" fn fnvsf_sysutil_sockaddr_clone(p_sockptr:*mut*mut vsf_sysutil
     die(str_to_const_char("can only support ipv4 and ipv6 currently\0"));
   }
 }
-
 
 //-----------------------------------------------------------------------------------------------------------------------------------//
 //skipping vsf_sysutil_sockaddr_addr_equal  beacuse of lot of dependencies
